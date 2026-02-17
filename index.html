@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Contact Center (V24 Service Filter Fix)</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #0f172a; }
+        
+        .drag-area { transition: all 0.3s ease; border-width: 2px; }
+        .drag-area:hover { border-color: #3b82f6; background-color: #eff6ff; }
+        .drag-area.active { border-color: #2563eb; background-color: #dbeafe; transform: scale(1.005); }
+        
+        th { cursor: pointer; user-select: none; white-space: nowrap; }
+        th:hover { background-color: #f1f5f9; }
+        
+        .scroller::-webkit-scrollbar { width: 6px; height: 6px; }
+        .scroller::-webkit-scrollbar-track { background: transparent; }
+        .scroller::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+        
+        .selected-row td { background-color: #fef08a !important; border-top: 1px solid #eab308; border-bottom: 1px solid #eab308; }
+        .card-header { cursor: pointer; transition: background-color 0.2s; position: relative; }
+        .card-header:hover { filter: brightness(0.95); }
+        
+        .alert-yellow { background-color: #fef9c3; color: #854d0e; font-weight: bold; }
+        .alert-red { background-color: #fee2e2; color: #991b1b; font-weight: bold; }
+
+        .tooltip-text {
+            visibility: hidden; width: 220px; background-color: #1e293b; color: #fff;
+            text-align: left; border-radius: 6px; padding: 8px 10px; position: absolute;
+            z-index: 50; top: 100%; left: 0; margin-top: 5px; opacity: 0; transition: opacity 0.3s;
+            font-size: 10px; font-weight: normal; line-height: 1.4; pointer-events: none;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        .card-header:hover .tooltip-text { visibility: visible; opacity: 1; }
+        .clickable-name:hover { text-decoration: underline; color: #2563eb; }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-[1920px] mx-auto px-6 py-3 flex justify-between items-center">
+            <h1 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs tracking-wider">CC</span>
+                Analítica Pro V24
+            </h1>
+            <div id="statusIndicator" class="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">Esperando Excel...</div>
+        </div>
+    </header>
+
+    <main class="max-w-[1920px] mx-auto px-6 py-6">
+        
+        <label for="fileInput" id="dropZone" class="drag-area block w-full bg-white border-dashed border-slate-300 rounded-xl p-8 text-center mb-6 cursor-pointer shadow-sm relative group">
+            <div class="pointer-events-none group-hover:scale-105 transition-transform">
+                <svg class="w-12 h-12 text-green-600 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                <h3 class="text-lg font-bold text-slate-700">Cargar Reporte Excel</h3>
+                <p class="text-xs text-slate-500">Detecta automáticamente: Detalle y Estados</p>
+            </div>
+            <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls">
+        </label>
+
+        <div id="errorBox" class="hidden mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm font-mono whitespace-pre-wrap"></div>
+
+        <div id="dashboard" class="hidden space-y-6 animate-fade-in">
+            
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col xl:flex-row gap-4 items-end">
+                <div class="w-full xl:w-auto flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Periodo Detectado</label>
+                    <div class="flex gap-2 items-center bg-slate-50 p-1 rounded-lg border border-slate-200">
+                        <button onclick="setFullRange()" class="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 shadow-sm rounded hover:bg-blue-200">Todo</button>
+                        <div class="h-4 w-px bg-slate-300 mx-1"></div>
+                        <input type="date" id="dateStart" class="bg-transparent text-xs outline-none w-28">
+                        <span class="text-slate-400">-</span>
+                        <input type="date" id="dateEnd" class="bg-transparent text-xs outline-none w-28">
+                    </div>
+                </div>
+                <div class="flex-grow md:w-1/4">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Servicio (Agrupado)</label>
+                    <select id="serviceFilter" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none"><option value="">Todos</option></select>
+                </div>
+                <div class="flex-grow md:w-1/3">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Buscar Agente</label>
+                    <input type="text" id="agentSearch" placeholder="Nombre..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="applyFilters()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-1.5 rounded-lg text-sm font-semibold">Filtrar</button>
+                    <button onclick="clearFilters()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-1.5 rounded-lg text-sm font-semibold">Limpiar</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 relative">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Productividad</p>
+                    <p class="text-3xl font-bold text-slate-800 mt-1" id="kpiGlobalProd">0%</p>
+                    <p class="text-[10px] text-green-600 mt-1">Hablado / (Contrato - Almuerzo)</p>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 relative">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Adherencia</p>
+                    <p class="text-3xl font-bold text-slate-800 mt-1" id="kpiGlobalAdh">0%</p>
+                    <p class="text-[10px] text-teal-600 mt-1">Conectado / (Contrato - Almuerzo)</p>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 relative">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ocupación</p>
+                    <p class="text-3xl font-bold text-slate-800 mt-1" id="kpiGlobalOcc">0%</p>
+                    <p class="text-[10px] text-orange-600 mt-1">(Hablado+ACW) / Conectado Real</p>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 relative">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">TMO Global</p>
+                    <p class="text-3xl font-bold text-slate-800 mt-1" id="kpiGlobalTMO">00:00</p>
+                    <p class="text-[10px] text-indigo-600 mt-1">Hablado / Llamadas</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
+                    <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Evolución Productividad</h4>
+                    <div class="h-40 relative"><canvas id="chartProd"></canvas></div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
+                    <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Evolución TMO</h4>
+                    <div class="h-40 relative"><canvas id="chartTMO"></canvas></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                <div id="rankContainerProd" class="bg-white rounded-lg shadow-sm border border-slate-200 h-80 flex flex-col"></div>
+                <div id="rankContainerAdh" class="bg-white rounded-lg shadow-sm border border-slate-200 h-80 flex flex-col"></div>
+                <div id="rankContainerOcc" class="bg-white rounded-lg shadow-sm border border-slate-200 h-80 flex flex-col"></div>
+                <div id="rankContainerTMO" class="bg-white rounded-lg shadow-sm border border-slate-200 h-80 flex flex-col"></div>
+                <div id="rankContainerIdle" class="bg-white rounded-lg shadow-sm border border-slate-200 h-80 flex flex-col"></div>
+                <div id="rankContainerACW" class="bg-white rounded-lg shadow-sm border border-slate-200 h-80 flex flex-col"></div>
+                <div id="rankContainerCalls" class="bg-white rounded-lg shadow-sm border border-slate-200 h-80 flex flex-col"></div>
+                <div id="rankContainerShort" class="bg-white rounded-lg shadow-sm border border-red-200 h-80 flex flex-col"></div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                    <h3 class="text-sm font-bold text-slate-600 uppercase">Detalle Diario</h3>
+                    <div class="flex gap-2 items-center">
+                        <span id="rowCount" class="text-xs font-medium text-slate-400 bg-white border border-slate-200 px-2 py-1 rounded">0 reg</span>
+                        <button onclick="exportTableOnly()" class="text-emerald-600 hover:text-emerald-700 text-xs font-bold underline">Descargar</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto scroller max-h-[600px]">
+                    <table class="w-full text-sm text-left border-collapse" id="mainTable">
+                        <thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm">
+                            <tr>
+                                <th class="px-3 py-3" onclick="sort(0)">Fecha</th>
+                                <th class="px-3 py-3" onclick="sort(1)">Agente</th>
+                                <th class="px-3 py-3 text-center" onclick="sort(17)">Turno</th>
+                                <th class="px-3 py-3 text-right bg-slate-100" onclick="sort(13, true)">Conectado</th>
+                                <th class="px-3 py-3 text-right" onclick="sort(4, true)">Llamadas</th>
+                                <th class="px-3 py-3 text-right text-indigo-600" onclick="sort(14, true)">TMO</th>
+                                <th class="px-3 py-3 text-right text-green-700" onclick="sort(6, true)">Hablado</th>
+                                <th class="px-3 py-3 text-right text-purple-600" onclick="sort(5, true)">ACW</th>
+                                <th class="px-3 py-3 text-right text-gray-500" onclick="sort(15, true)">IDLE</th>
+                                <th class="px-3 py-3 text-right text-slate-500" onclick="sort(7, true)">Almuerzo</th>
+                                <th class="px-3 py-3 text-right text-slate-500" onclick="sort(20, true)">Break</th>
+                                <th class="px-3 py-3 text-right text-cyan-600" onclick="sort(16, true)">Baño</th>
+                                <th class="px-3 py-3 text-center text-red-600 bg-red-50 border-l" onclick="sort(21, true)">Cortas <45s</th>
+                                <th class="px-3 py-3 text-center bg-blue-50 text-blue-700 border-l" onclick="sort(11, true)">Prod %</th>
+                                <th class="px-3 py-3 text-center bg-teal-50 text-teal-700" onclick="sort(18, true)">Adh %</th>
+                                <th class="px-3 py-3 text-center bg-orange-50 text-orange-700" onclick="sort(19, true)">Ocup %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-slate-100 text-slate-600"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+<script>
+    let GLOBAL_DATA = [], FILTERED_DATA = [], charts = {};
+    let cardSortState = { prod:-1, tmo:-1, adh:-1, occ:-1, t_acw:-1, idle:-1, c_calls:-1, short_call_pct:-1 };
+    let minDate, maxDate;
+
+    // --- CONFIG ---
+    const KPI_DESCRIPTIONS = {
+        'prod': "PRODUCTIVIDAD: Tiempo Hablado / (Turno Contratado - Almuerzo Aprox).",
+        'adh': "ADHERENCIA: Tiempo Conectado Real / (Turno Contratado - Almuerzo Aprox).",
+        'occ': "OCUPACIÓN: (Hablado + ACW) / Tiempo Conectado Real.",
+        'tmo': "TMO: Tiempo Hablado Total / Cantidad de Llamadas.",
+        'idle': "IDLE: Tiempo ACW Total / Cantidad de Llamadas.",
+        't_acw': "ACW TOTAL: Suma total del tiempo administrativo.",
+        'c_calls': "LLAMADAS: Cantidad total de llamadas gestionadas.",
+        'short_call_pct': "CORTAS <45s: % de llamadas menores a 45 seg sobre el total del ejecutivo."
+    };
+    const THRESHOLD_SHORT_CALL = 45; 
+
+    // --- UTILS ---
+    const norm = (s) => String(s||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const pad = (n) => n.toString().padStart(2, '0');
+    
+    function normalizeDate(val) {
+        if(!val) return "";
+        if(val instanceof Date) return val.toISOString().split('T')[0];
+        if(typeof val === 'number' && val > 20000) {
+            const d = new Date(Math.round((val - 25569)*86400*1000));
+            return d.toISOString().split('T')[0];
+        }
+        let s = String(val).trim();
+        if(s.includes('/')) {
+            const p = s.split('/');
+            return (parseInt(p[0])>1000) ? `${p[0]}-${pad(p[1])}-${pad(p[2])}` : `${p[2]}-${pad(p[1])}-${pad(p[0])}`;
+        }
+        return s;
+    }
+
+    function timeToSec(val) {
+        if(val == null || val === "") return 0;
+        if(typeof val === 'number') return Math.round(val * 86400); 
+        if(val instanceof Date) return val.getHours()*3600 + val.getMinutes()*60 + val.getSeconds();
+        const s = String(val).trim();
+        const timePart = s.includes(' ') ? s.split(' ')[1] : s;
+        const parts = timePart.split(':').map(Number);
+        if(parts.length >= 2) return parts[0]*3600 + parts[1]*60 + (parts[2]||0);
+        return 0;
+    }
+
+    function secToTime(s, short=false) {
+        if(!s || s<0) return short?"00:00":"00:00:00";
+        const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=Math.floor(s%60);
+        return short ? `${pad(m)}:${pad(sec)}` : `${pad(h)}:${pad(m)}:${pad(sec)}`;
+    }
+
+    function cleanName(n) {
+        let s = String(n||"").replace(/\./g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+        return s.replace(/(^\w{1})|(\s+\w{1})/g, l => l.toUpperCase());
+    }
+
+    function findCol(headerRow, keywords) {
+        if (!Array.isArray(headerRow)) return -1;
+        const index = headerRow.findIndex(h => keywords.some(kw => String(h).toLowerCase().includes(kw)));
+        return index;
+    }
+
+    // --- LOGICA DE SERVICIO (Nueva) ---
+    function detectService(agentName) {
+        const name = agentName.toLowerCase();
+        
+        // 1. Mapeo Manual (Si el nombre de la persona define el servicio)
+        // Puedes agregar más nombres aquí si es necesario
+        if (name.includes('mesa') || name.includes('central')) return 'Mesa Central';
+        if (name.includes('bloqueo')) return 'Bloqueo';
+        if (name.includes('ingreso')) return 'Ingreso';
+        
+        // 2. Detección por Prefijo (Ej: Mesa.Juan -> Mesa)
+        const parts = agentName.split('.');
+        if(parts.length > 1) {
+            const prefix = parts[0].toLowerCase();
+            // Lista de prefijos conocidos para agrupar
+            if(prefix === 'mesa') return 'Mesa Central';
+            if(prefix === 'bloqueo') return 'Bloqueo';
+            if(prefix === 'ing' || prefix === 'ingreso') return 'Ingreso';
+            if(prefix === 'camp' || prefix === 'campana') return 'Campaña';
+        }
+
+        // 3. Fallback: Si no tiene prefijo, asignamos por defecto o por nombre conocido
+        // Aquí podrías agregar lógica si "diego" siempre es "Mesa Central"
+        if(name.includes('diego') || name.includes('belfred')) return 'Mesa Central'; 
+        if(name.includes('joanna')) return 'Ingreso';
+        if(name.includes('paola')) return 'Bloqueo';
+
+        return 'General';
+    }
+
+    // --- MAIN ---
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+        if(e.target.files.length) processFile(e.target.files[0]);
+    });
+
+    function processFile(file) {
+        const status = document.getElementById('statusIndicator');
+        const errorBox = document.getElementById('errorBox');
+        status.innerText = "Leyendo...";
+        errorBox.classList.add('hidden');
+        errorBox.innerText = '';
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array', cellDates: true});
+                
+                let detailSheetName = "";
+                let stateSheetName = "";
+
+                workbook.SheetNames.forEach(name => {
+                    const sheet = workbook.Sheets[name];
+                    const jsonData = XLSX.utils.sheet_to_json(sheet, {header: 1, range: 0, defval: ""});
+                    if (jsonData.length > 0) {
+                        const header = jsonData[0];
+                        if (findCol(header, ['agente','ejecutivo']) > -1 && findCol(header, ['estado','status']) > -1) {
+                            detailSheetName = name;
+                        }
+                        if (findCol(header, ['agente']) > -1 && findCol(header, ['inicio turnor', 'inicio turno', 'entrada']) > -1) {
+                            stateSheetName = name;
+                        }
+                    }
+                });
+
+                if (!detailSheetName) throw new Error("No se encontró la hoja de 'Reporte Detallado'.");
+                
+                const jsonDetail = XLSX.utils.sheet_to_json(workbook.Sheets[detailSheetName]);
+                const jsonStates = stateSheetName ? XLSX.utils.sheet_to_json(workbook.Sheets[stateSheetName]) : [];
+
+                if(!jsonDetail.length) throw new Error("La hoja de detalle está vacía.");
+
+                analyzeData(jsonDetail, jsonStates);
+                
+                if (GLOBAL_DATA.length === 0) throw new Error("No se generaron datos.");
+
+                status.innerText = "Datos Cargados";
+                status.className = "text-xs font-bold text-green-600 bg-green-100 px-3 py-1 rounded-full";
+            } catch(err) {
+                status.innerText = "Error";
+                status.className = "text-xs font-bold text-red-600 bg-red-100 px-3 py-1 rounded-full";
+                errorBox.innerText = "Error: " + err.message;
+                errorBox.classList.remove('hidden');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function getVal(row, keywords) {
+        const keys = Object.keys(row);
+        const k = keys.find(key => keywords.some(kw => key.toLowerCase().includes(kw)));
+        return k ? row[k] : undefined;
+    }
+
+    function analyzeData(detailRows, stateRows) {
+        const shiftMap = {};
+        stateRows.forEach(row => {
+            const rawAgente = getVal(row, ['agente', 'nombre']);
+            const rawFecha = getVal(row, ['fecha', 'dia']);
+            const rawStart = getVal(row, ['inicio turnor', 'inicio turno', 'entrada']); 
+            const rawEnd = getVal(row, ['fin turno', 'fin turnor', 'salida']);
+            
+            if(rawAgente && rawFecha) {
+                const key = `${cleanName(rawAgente)}|${normalizeDate(rawFecha)}`;
+                shiftMap[key] = { start: rawStart, end: rawEnd };
+            }
+        });
+
+        const groups = {};
+        detailRows.forEach(row => {
+            const rawAgente = getVal(row, ['agente']);
+            const rawFecha = getVal(row, ['fecha']);
+            
+            if(!rawAgente) return;
+            const name = cleanName(rawAgente);
+            const date = normalizeDate(rawFecha);
+            const key = `${name}|${date}`;
+
+            if(!groups[key]) groups[key] = { agent: name, date: date, regs: [] };
+            
+            groups[key].regs.push({
+                estado: String(getVal(row, ['estado'])||"").toLowerCase(),
+                inicio: getVal(row, ['hora inicio', 'inicio']),
+                tiempo: getVal(row, ['tiempo', 'duracion'])
+            });
+        });
+
+        const services = new Set();
+        let minTime = Infinity, maxTime = -Infinity;
+
+        GLOBAL_DATA = Object.values(groups).map(g => {
+            const stats = {
+                agente: g.agent, fecha: g.date,
+                service: detectService(g.agent), // USAMOS LA NUEVA FUNCIÓN
+                t_hablado: 0, t_acw: 0, t_almuerzo: 0, t_break: 0, t_bano: 0, c_calls: 0,
+                c_short_calls: 0,
+                t_conectado_real: 0, t_contratado: 0, t_almuerzo_aprox: 0
+            };
+            
+            const dTime = new Date(g.date).getTime();
+            if(dTime < minTime) minTime = dTime;
+            if(dTime > maxTime) maxTime = dTime;
+
+            services.add(stats.service);
+
+            let loginTime = null;
+            let logoutTime = null;
+
+            g.regs.forEach(r => {
+                const s = norm(r.estado);
+                const dur = timeToSec(r.tiempo);
+                const start = timeToSec(r.inicio);
+
+                if(s.includes('gestion llamada')) { 
+                    stats.t_hablado += dur; 
+                    stats.c_calls++;
+                    if(dur < THRESHOLD_SHORT_CALL) stats.c_short_calls++;
+                }
+                else if(s.includes('en linea')) stats.t_acw += dur;
+                else if(s.includes('colacion') || s.includes('almuerzo')) stats.t_almuerzo += dur;
+                else if(s.includes('break')) stats.t_break += dur;
+                else if(s.includes('bano')) stats.t_bano += dur;
+
+                if(s === 'conectado') {
+                    if(loginTime === null || start < loginTime) loginTime = start;
+                }
+                if(s.includes('cierre') || s.includes('sesion')) {
+                    if(logoutTime === null || start > logoutTime) logoutTime = start;
+                }
+            });
+
+            if(loginTime !== null && logoutTime !== null && logoutTime > loginTime) {
+                stats.t_conectado_real = logoutTime - loginTime;
+            } else {
+                stats.t_conectado_real = stats.t_hablado + stats.t_acw + stats.t_break + stats.t_almuerzo + stats.t_bano;
+            }
+
+            if(stats.t_almuerzo > 0) {
+                stats.t_almuerzo_aprox = stats.t_almuerzo <= 2700 ? 1800 : 3600;
+            }
+
+            const shift = shiftMap[`${g.agent}|${g.date}`];
+            if(shift && shift.start && shift.end && !String(shift.start).toLowerCase().includes('sin')) {
+                const s = timeToSec(shift.start);
+                const e = timeToSec(shift.end);
+                if(e > s) stats.t_contratado = e - s;
+            }
+
+            let base_contrato = stats.t_contratado - stats.t_almuerzo_aprox;
+            if(base_contrato <= 0 && stats.t_conectado_real > 0) base_contrato = stats.t_conectado_real - stats.t_almuerzo_aprox;
+            
+            stats.prod = (base_contrato > 0) ? (stats.t_hablado / base_contrato)*100 : 0;
+            stats.adh = (base_contrato > 0) ? (stats.t_conectado_real / base_contrato)*100 : 0;
+            
+            const num_occ = stats.t_hablado + stats.t_acw;
+            stats.occ = (stats.t_conectado_real > 0) ? (num_occ / stats.t_conectado_real)*100 : 0;
+
+            stats.tmo = stats.c_calls > 0 ? stats.t_hablado / stats.c_calls : 0;
+            stats.idle = stats.c_calls > 0 ? stats.t_acw / stats.c_calls : 0;
+            stats.short_call_pct = stats.c_calls > 0 ? (stats.c_short_calls / stats.c_calls) * 100 : 0;
+            
+            stats.base_calculo = base_contrato > 0 ? base_contrato : 0;
+
+            return stats;
+        });
+
+        const sel = document.getElementById('serviceFilter');
+        sel.innerHTML = '<option value="">Todos</option>';
+        [...services].sort().forEach(s => {
+            sel.innerHTML += `<option value="${s}">${s}</option>`;
+        });
+
+        if (minTime !== Infinity) {
+            minDate = new Date(minTime).toISOString().split('T')[0];
+            maxDate = new Date(maxTime).toISOString().split('T')[0];
+            setFullRange();
+        }
+
+        document.getElementById('dropZone').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+    }
+
+    // --- FILTROS ---
+    function setFullRange() {
+        if(minDate) {
+            document.getElementById('dateStart').value = minDate;
+            document.getElementById('dateEnd').value = maxDate;
+            applyFilters();
+        }
+    }
+
+    function clearFilters() {
+        document.getElementById('agentSearch').value = '';
+        document.getElementById('serviceFilter').value = '';
+        setFullRange();
+    }
+
+    function setAgentFilter(name) {
+        document.getElementById('agentSearch').value = name;
+        applyFilters();
+    }
+
+    window.applyFilters = function() {
+        const s = document.getElementById('dateStart').value;
+        const e = document.getElementById('dateEnd').value;
+        const searchInput = document.getElementById('agentSearch').value.toLowerCase();
+        const searchTerms = searchInput.split(',').map(s=>s.trim()).filter(Boolean);
+        const service = document.getElementById('serviceFilter').value.toLowerCase();
+
+        FILTERED_DATA = GLOBAL_DATA.filter(d => {
+            const dateOk = (!s || d.fecha>=s) && (!e || d.fecha<=e);
+            let agentOk = true;
+            if (searchTerms.length > 0) agentOk = searchTerms.some(t=>d.agente.toLowerCase().includes(t));
+            const servOk = !service || d.service.toLowerCase().includes(service);
+            return dateOk && agentOk && servOk;
+        });
+
+        updateKPIs();
+        renderCharts();
+        renderRankCards();
+        renderTable();
+    }
+
+    function updateKPIs() {
+        let sums = { h:0, acw:0, con_real:0, cont_neto:0, calls:0 };
+        FILTERED_DATA.forEach(d => {
+            sums.h += d.t_hablado; 
+            sums.acw += d.t_acw; 
+            sums.con_real += d.t_conectado_real;
+            sums.calls += d.c_calls;
+            sums.cont_neto += d.base_calculo; 
+        });
+        
+        const prod = sums.cont_neto ? (sums.h/sums.cont_neto)*100 : 0;
+        const adh = sums.cont_neto ? (sums.con_real/sums.cont_neto)*100 : 0;
+        const occ = sums.con_real ? ((sums.h+sums.acw)/sums.con_real)*100 : 0;
+        const tmo = sums.calls ? sums.h/sums.calls : 0;
+
+        document.getElementById('kpiGlobalProd').innerText = prod.toFixed(1)+'%';
+        document.getElementById('kpiGlobalAdh').innerText = adh.toFixed(1)+'%';
+        document.getElementById('kpiGlobalOcc').innerText = occ.toFixed(1)+'%';
+        document.getElementById('kpiGlobalTMO').innerText = secToTime(tmo, true);
+    }
+
+    function createRankCard(containerId, title, metricKey, formatFn, colorClass) {
+        const container = document.getElementById(containerId);
+        
+        const sorted = [...FILTERED_DATA].reduce((acc, curr) => {
+            if(!acc[curr.agente]) {
+                 acc[curr.agente] = { ...curr, count:1, c_short_calls_raw: curr.c_short_calls, c_calls_raw: curr.c_calls };
+            } else {
+                acc[curr.agente].c_short_calls_raw += curr.c_short_calls;
+                acc[curr.agente].c_calls_raw += curr.c_calls;
+                // Acumulación o promedio simple
+                if (['prod','adh','occ','tmo','idle'].includes(metricKey)) {
+                     acc[curr.agente][metricKey] = (acc[curr.agente][metricKey] + curr[metricKey]) / 2;
+                } else if (['t_acw','c_calls'].includes(metricKey)) {
+                     acc[curr.agente][metricKey] += curr[metricKey];
+                }
+            }
+            return acc;
+        }, {});
+        
+        // Recalcular short calls en agrupado
+        Object.values(sorted).forEach(a => {
+            a.short_call_pct = a.c_calls_raw > 0 ? (a.c_short_calls_raw / a.c_calls_raw) * 100 : 0;
+        });
+        
+        // Ordenar SIEMPRE mayor a menor basado en el estado (-1 es desc)
+        let list = Object.values(sorted).sort((a,b) => (b[metricKey] - a[metricKey]) * cardSortState[metricKey]);
+
+        const headerHtml = `
+            <div class="px-3 py-3 border-b border-slate-100 bg-slate-50 card-header group" onclick="toggleCardSort('${metricKey}')">
+                <h4 class="text-xs font-bold ${colorClass} uppercase flex justify-between relative">
+                    ${title} <span>${cardSortState[metricKey]===1?'▲':'▼'}</span>
+                    <span class="tooltip-text">${KPI_DESCRIPTIONS[metricKey] || 'Indicador calculado'}</span>
+                </h4>
+            </div>
+            <div class="overflow-y-auto scroller flex-grow p-0">
+                <table class="w-full text-xs">
+                    ${list.map((d,i) => `
+                        <tr class="border-b border-slate-50 hover:bg-blue-50 cursor-pointer" onclick="setAgentFilter('${d.agente}')">
+                            <td class="pl-3 py-2 text-slate-400 w-6">${i+1}.</td>
+                            <td class="py-2 truncate max-w-[100px] font-medium clickable-name">${d.agente}</td>
+                            <td class="pr-3 py-2 text-right font-bold ${colorClass}">${formatFn(d[metricKey])}</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            </div>
+        `;
+        container.innerHTML = headerHtml;
+    }
+
+    window.toggleCardSort = (k) => { cardSortState[k]*=-1; renderRankCards(); };
+
+    function renderRankCards() {
+        createRankCard('rankContainerProd', '🏆 Productividad', 'prod', v=>v.toFixed(0)+'%', 'text-blue-700');
+        createRankCard('rankContainerAdh', '🧩 Adherencia', 'adh', v=>v.toFixed(0)+'%', 'text-teal-700');
+        createRankCard('rankContainerOcc', '🔥 Ocupación', 'occ', v=>v.toFixed(0)+'%', 'text-orange-700');
+        createRankCard('rankContainerTMO', '⏱️ TMO', 'tmo', v=>secToTime(v,true), 'text-indigo-700');
+        createRankCard('rankContainerIdle', '💤 IDLE', 'idle', v=>secToTime(v,true), 'text-gray-600');
+        createRankCard('rankContainerACW', '📝 ACW Total', 't_acw', v=>secToTime(v), 'text-purple-700');
+        createRankCard('rankContainerCalls', '📞 Llamadas', 'c_calls', v=>v, 'text-slate-800');
+        createRankCard('rankContainerShort', '🚨 CORTAS <45s %', 'short_call_pct', v=>v.toFixed(1)+'%', 'text-red-700');
+    }
+
+    function renderCharts() {
+        const groups = {};
+        FILTERED_DATA.forEach(d => {
+            if(!groups[d.fecha]) groups[d.fecha] = { date:d.fecha, h:0, con:0, acw:0, calls:0 };
+            groups[d.fecha].h += d.t_hablado;
+            groups[d.fecha].con += d.t_conectado_real;
+            groups[d.fecha].acw += d.t_acw;
+            groups[d.fecha].calls += d.c_calls;
+        });
+        const labels = Object.keys(groups).sort();
+        const dProd = labels.map(l => groups[l].con ? (groups[l].h/groups[l].con)*100 : 0);
+        const dTMO = labels.map(l => groups[l].calls ? (groups[l].h/groups[l].calls)/60 : 0);
+
+        updChart('chartProd', 'Prod %', labels, dProd, '#3b82f6');
+        updChart('chartTMO', 'TMO (Min)', labels, dTMO, '#6366f1');
+    }
+    
+    function updChart(id, l, ls, d, c) {
+        if(charts[id]) charts[id].destroy();
+        charts[id] = new Chart(document.getElementById(id), { 
+            type:'line', 
+            data:{labels:ls, datasets:[{label:l, data:d, borderColor:c, backgroundColor:c+'20', fill:true, tension:0.3}]},
+            options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}
+        });
+    }
+
+    function renderTable() {
+        const tb = document.getElementById('tableBody'); tb.innerHTML = '';
+        document.getElementById('rowCount').innerText = FILTERED_DATA.length + ' reg';
+        FILTERED_DATA.forEach(d => {
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-blue-50/30 border-b border-slate-100 last:border-0 transition-colors";
+            
+            const lunchDiff = (d.t_almuerzo - d.t_almuerzo_aprox)/60; 
+            let lunchClass = lunchDiff > 5 ? "alert-red rounded px-1" : (lunchDiff > 0 ? "alert-yellow rounded px-1" : "");
+            const breakDiff = (d.t_break/60) - 30;
+            let breakClass = breakDiff > 5 ? "alert-red rounded px-1" : (breakDiff > 0 ? "alert-yellow rounded px-1" : "");
+            const bathDiff = (d.t_bano/60) - 15;
+            let bathClass = bathDiff > 5 ? "alert-red rounded px-1" : (bathDiff > 0 ? "alert-yellow rounded px-1" : "");
+            let shortClass = d.short_call_pct > 20 ? "text-red-600 font-bold" : (d.short_call_pct > 10 ? "text-yellow-600" : "text-slate-500");
+
+            tr.innerHTML = `
+                <td class="px-3 py-2 font-mono text-xs whitespace-nowrap">${d.fecha}</td>
+                <td class="px-3 py-2 font-bold text-slate-700 whitespace-nowrap text-xs cursor-pointer hover:text-blue-600" onclick="setAgentFilter('${d.agente}')">${d.agente}</td>
+                <td class="px-3 py-2 text-center text-[10px] text-slate-400 font-mono">${secToTime(d.t_contratado,true)}</td>
+                <td class="px-3 py-2 text-right font-mono font-bold text-slate-700 bg-slate-50">${secToTime(d.t_conectado_real)}</td>
+                <td class="px-3 py-2 text-right font-bold text-slate-800">${d.c_calls}</td>
+                <td class="px-3 py-2 text-right text-indigo-600 font-mono text-xs font-bold">${secToTime(d.tmo, true)}</td>
+                <td class="px-3 py-2 text-right text-green-700 font-mono text-xs">${secToTime(d.t_hablado)}</td>
+                <td class="px-3 py-2 text-right text-purple-600 font-mono text-xs">${secToTime(d.t_acw)}</td>
+                <td class="px-3 py-2 text-right text-gray-500 font-mono text-xs">${secToTime(d.idle, true)}</td>
+                <td class="px-3 py-2 text-right text-xs font-mono ${lunchClass}">${secToTime(d.t_almuerzo)}</td>
+                <td class="px-3 py-2 text-right text-xs font-mono ${breakClass}">${secToTime(d.t_break)}</td>
+                <td class="px-3 py-2 text-right text-xs font-mono ${bathClass}">${secToTime(d.t_bano)}</td>
+                <td class="px-3 py-2 text-center font-bold border-l bg-red-50 ${shortClass}">${d.short_call_pct.toFixed(1)}%</td>
+                <td class="px-3 py-2 text-center font-bold text-teal-700 bg-teal-50">${d.prod.toFixed(0)}%</td>
+                <td class="px-3 py-2 text-center font-bold text-teal-700">${d.adh.toFixed(0)}%</td>
+                <td class="px-3 py-2 text-center font-bold text-orange-700">${(d.occ || 0).toFixed(0)}%</td>
+            `;
+            tb.appendChild(tr);
+        });
+    }
+
+    function getProdColor(v) {
+        if(v >= 100) return "text-green-600";
+        if(v >= 75) return "text-green-600";
+        if(v >= 50) return "text-yellow-600";
+        return "text-red-600";
+    }
+
+    let sD = 1;
+    window.sort = (i, n) => {
+        // Asegurado que índice 19 sea 'occ'
+        const k=['fecha','agente','t_contratado','t_conectado_real','c_calls','tmo','t_hablado','t_acw','idle','t_almuerzo','t_break','t_bano','short_call_pct','prod','adh','occ'][i];
+        if(!k) { console.error("Sort key not found for index", i); return; }
+        FILTERED_DATA.sort((a,b) => { let vA=a[k], vB=b[k]; if(typeof vA==='string'){vA=vA.toLowerCase();vB=vB.toLowerCase();} return (vA<vB?-1:1)*sD; });
+        sD*=-1; renderTable();
+    }
+    
+    window.exportTableOnly = () => {
+        const csv = XLSX.utils.sheet_to_csv(XLSX.utils.json_to_sheet(FILTERED_DATA));
+        const b = new Blob([csv], {type:'text/csv'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download="tabla.csv"; a.click();
+    }
+    window.exportToCSV = window.exportTableOnly;
+</script>
+</body>
+</html>
