@@ -3,730 +3,705 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Contact Center (V31 Config Visual)</title>
+    <title>Dashboard Contact Center (V38 IDLE Fix)</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #0f172a; }
-        .card-header { cursor: pointer; transition: background-color 0.2s; position: relative; }
-        .card-header:hover { filter: brightness(0.95); }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; }
         .scroller::-webkit-scrollbar { width: 6px; height: 6px; }
         .scroller::-webkit-scrollbar-track { background: transparent; }
-        .scroller::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
-        .selected-row td { background-color: #fef08a !important; border-top: 1px solid #eab308; border-bottom: 1px solid #eab308; }
-        .alert-yellow { background-color: #fef9c3; color: #854d0e; font-weight: bold; }
-        .alert-red { background-color: #fee2e2; color: #991b1b; font-weight: bold; }
-        .tooltip-text {
-            visibility: hidden; width: 220px; background-color: #1e293b; color: #fff;
-            text-align: left; border-radius: 6px; padding: 8px 10px; position: absolute;
-            z-index: 50; top: 100%; left: 0; margin-top: 5px; opacity: 0; transition: opacity 0.3s;
-            font-size: 10px; font-weight: normal; line-height: 1.4; pointer-events: none;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        }
-        .card-header:hover .tooltip-text { visibility: visible; opacity: 1; }
-        .clickable-name:hover { text-decoration: underline; color: #2563eb; }
+        .scroller::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        
+        /* Animación de carga */
+        .spinner { border: 2px solid #f3f3f3; border-top: 2px solid #3b82f6; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle;}
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .feedback-done { background-color: #d1fae5 !important; border-left: 6px solid #059669 !important; }
+        .feedback-done td { color: #064e3b; font-weight: 600; }
+        
+        .hover-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+        .clickable-card { cursor: pointer; transition: all 0.2s; }
+        .clickable-card:active { transform: scale(0.98); }
+        .selected-sup { ring: 2px; ring-color: #3b82f6; background-color: #eff6ff; }
+        
+        /* Alertas Tabla */
+        .alert-cell-red { background-color: #fee2e2; color: #991b1b; font-weight: bold; }
+        .alert-cell-orange { background-color: #ffedd5; color: #9a3412; font-weight: bold; }
+        
+        /* Botón Activo Filtro */
+        .btn-active { background-color: #fcd34d; color: #78350f; border-color: #f59e0b; }
     </style>
 </head>
-<body class="text-slate-800">
+<body class="text-slate-800 bg-slate-50">
 
-    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-30">
-        <div class="max-w-[1920px] mx-auto px-6 py-3 flex justify-between items-center">
-            <h1 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs tracking-wider">CLOUD</span>
-                Analítica Pro V31
+    <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-[1920px] mx-auto px-6 py-2 flex justify-between items-center">
+            <h1 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                <span class="bg-indigo-600 text-white px-2 py-0.5 rounded text-[10px] tracking-wider font-mono">V38</span>
+                Analítica & Supervisión
             </h1>
-            <div class="flex gap-3">
-                <button onclick="showConfig()" class="text-xs font-bold text-slate-500 hover:text-blue-600 flex items-center gap-1">
-                    ⚙️ Configurar API
+            <div class="flex gap-2 items-center">
+                <button onclick="openDigitalPanel()" class="text-[10px] font-bold text-slate-500 hover:text-green-600 border border-slate-200 hover:border-green-300 px-2 py-1 rounded transition-colors flex items-center gap-1">
+                    <i class="fab fa-whatsapp text-lg"></i> Digital
                 </button>
-                <div id="statusIndicator" class="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
-                    Esperando...
+                <button onclick="showConfig()" class="text-[10px] font-bold text-slate-500 hover:text-blue-600 border border-slate-200 hover:border-blue-300 px-2 py-1 rounded transition-colors flex items-center gap-1">
+                    <i class="fas fa-cog"></i> API
+                </button>
+                <div id="statusIndicator" class="text-[10px] font-bold text-slate-400 border border-slate-100 px-2 py-1 rounded flex items-center gap-1">
+                    <div class="w-2 h-2 rounded-full bg-slate-300"></div> Offline
                 </div>
             </div>
         </div>
     </header>
 
-    <main class="max-w-[1920px] mx-auto px-6 py-6">
+    <main class="max-w-[1920px] mx-auto px-4 py-6 space-y-6">
         
         <div id="configPanel" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
-            <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-lg">
-                <h2 class="text-xl font-bold text-slate-800 mb-2">Conectar Google Sheet</h2>
-                <p class="text-sm text-slate-500 mb-4">Ingresa la URL de tu Web App (Apps Script) para conectar los datos automáticamente.</p>
-                
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">URL del Script (/exec)</label>
-                <input type="text" id="apiUrlInput" class="w-full border border-slate-300 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none mb-4" placeholder="https://script.google.com/macros/s/..../exec">
-                
+            <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+                <h2 class="text-lg font-bold text-slate-800 mb-2">Conectar Google Sheet</h2>
+                <input type="text" id="apiUrlInput" class="w-full border border-slate-300 rounded p-2 text-sm outline-none mb-4" placeholder="URL del Script...">
                 <div class="flex justify-end gap-2">
-                    <button onclick="closeConfig()" class="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded">Cancelar</button>
-                    <button onclick="saveConfig()" class="px-6 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-bold rounded shadow-sm">Guardar y Conectar</button>
-                </div>
-                <div class="mt-4 p-3 bg-blue-50 rounded text-xs text-blue-800">
-                    <strong>Tip:</strong> Asegúrate de que el script esté implementado con acceso para <u>"Cualquier usuario"</u>.
+                    <button onclick="closeConfig()" class="px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded">Cancelar</button>
+                    <button onclick="saveConfig()" class="px-4 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded shadow-sm">Guardar</button>
                 </div>
             </div>
         </div>
 
-        <div id="errorBox" class="hidden mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded shadow-sm">
-            <p class="text-sm text-red-800 font-bold" id="errorTitle">Error</p>
-            <p class="text-xs text-red-600 mt-1" id="errorDetail">...</p>
-            <button onclick="showConfig()" class="mt-2 text-xs text-red-700 underline">Revisar Configuración</button>
+        <div id="digitalPanel" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
+            <div class="bg-white rounded-xl shadow-xl border-t-4 border-green-500 w-full max-w-md overflow-hidden">
+                <div class="bg-green-50 px-6 py-3 border-b border-green-100 flex justify-between items-center">
+                    <h2 class="text-sm font-bold text-green-800">📱 Cargar Horas Digitales</h2>
+                    <button onclick="document.getElementById('digitalPanel').classList.add('hidden')" class="text-green-800 hover:bg-green-200 rounded-full w-6 h-6 font-bold">✕</button>
+                </div>
+                <form id="formDigital" class="p-6 space-y-3">
+                    <input type="date" id="digFecha" class="w-full border p-2 rounded text-xs" required>
+                    <select id="digAgente" class="w-full border p-2 rounded text-xs" required><option>Cargando...</option></select>
+                    <input type="number" id="digHoras" step="0.1" class="w-full border p-2 rounded text-xs" placeholder="Horas (Decimal)" required>
+                    <button type="submit" id="btnSaveDigital" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded shadow text-xs">Guardar</button>
+                </form>
+            </div>
         </div>
 
-        <div id="fallbackZone" class="hidden mb-6">
-            <label for="fileInput" class="block w-full bg-white border-2 border-dashed border-orange-300 rounded-xl p-6 text-center cursor-pointer hover:bg-orange-50 transition-colors">
-                <span class="text-orange-600 font-bold text-sm">Modo Offline: Cargar Excel Manualmente</span>
-                <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls">
-            </label>
+        <div id="feedbackPanel" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm overflow-y-auto py-10">
+            <div class="bg-white rounded-xl shadow-2xl border-t-4 border-indigo-600 w-full max-w-3xl overflow-hidden relative">
+                <div class="bg-indigo-50 px-8 py-4 border-b border-indigo-100 flex justify-between items-center sticky top-0 z-10">
+                    <h2 class="text-lg font-bold text-indigo-900 flex items-center gap-2" id="fbTitle">
+                        <i class="fas fa-file-signature"></i> Gestión de Desempeño
+                    </h2>
+                    <button onclick="closeFeedback()" class="text-indigo-900 hover:bg-indigo-200 rounded-full w-8 h-8 flex items-center justify-center font-bold">✕</button>
+                </div>
+                <form id="formFeedback" class="p-8 space-y-4 max-h-[80vh] overflow-y-auto">
+                    <div id="fbStatusBanner" class="hidden mb-4 p-3 rounded text-center text-sm font-bold"></div>
+                    <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded border border-slate-200">
+                        <div><label class="block text-[10px] font-bold text-slate-400 uppercase">Ejecutivo</label><input type="text" id="fbEjecutivo" name="ejecutivo" class="w-full bg-transparent font-bold text-slate-800 outline-none" readonly></div>
+                        <div><label class="block text-[10px] font-bold text-slate-400 uppercase">Fecha Desviación</label><input type="text" id="fbFechaDesv" name="fecha_desv" class="w-full bg-transparent font-bold text-slate-800 outline-none" readonly></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div><label class="block text-xs font-bold text-slate-700 uppercase mb-1">Evaluador</label><select name="evaluador" id="fbEvaluador" class="w-full border border-slate-300 rounded p-2 text-sm bg-white" required><option value="">-- Seleccionar --</option><option value="Luis Cataldo">Luis Cataldo</option><option value="Angélica Ferrada">Angélica Ferrada</option><option value="Carla Cabrera">Carla Cabrera</option></select></div>
+                        <div><label class="block text-xs font-bold text-slate-700 uppercase mb-1">Fecha Feedback</label><input type="date" id="fbFechaFeed" name="fecha_feed" class="w-full border border-slate-300 rounded p-2 text-sm" required></div>
+                        <div><label class="block text-xs font-bold text-slate-700 uppercase mb-1">Hora Feedback</label><input type="time" id="fbHoraFeed" name="hora_feed" class="w-full border border-slate-300 rounded p-2 text-sm" required></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-xs font-bold text-slate-700 uppercase mb-1">Grabación Audio</label><select name="audio" id="fbAudio" class="w-full border border-slate-300 rounded p-2 text-sm bg-white" required><option value="NO">NO</option><option value="SI">SI</option></select></div>
+                        <div><label class="block text-xs font-bold text-slate-700 uppercase mb-1">Indicador Afectado</label><select name="indicador" id="fbIndicador" class="w-full border border-slate-300 rounded p-2 text-sm bg-white" required><option value="">-- Seleccionar --</option><option value="TMO">TMO</option><option value="Productividad">Productividad</option><option value="Adherencia">Adherencia</option><option value="Calidad">Calidad</option><option value="Ausentismo">Ausentismo</option><option value="Conductual">Conductual</option><option value="Procedimiento">Procedimiento</option></select></div>
+                    </div>
+                    <div><label class="block text-xs font-bold text-slate-700 uppercase mb-1">Detalle del Quiebre (Análisis)</label><textarea name="detalle" id="fbDetalle" rows="3" class="w-full border border-slate-300 rounded p-2 text-sm resize-none" placeholder="Describa la situación..." required></textarea></div>
+                    <div><label class="block text-xs font-bold text-slate-700 uppercase mb-1">Observación Ejecutivo (Descargos)</label><textarea name="observacion" id="fbObservacion" rows="2" class="w-full border border-slate-300 rounded p-2 text-sm resize-none" placeholder="Comentarios del agente..."></textarea></div>
+                    <div><label class="block text-xs font-bold text-indigo-700 uppercase mb-1">Compromiso / Acuerdo</label><textarea name="compromiso" id="fbCompromiso" rows="2" class="w-full border-2 border-indigo-100 bg-indigo-50/30 rounded p-2 text-sm resize-none" placeholder="Acuerdo de mejora..." required></textarea></div>
+                    <div class="pt-4 flex justify-between items-center border-t border-slate-100 mt-4">
+                        <button type="button" id="btnPdf" onclick="generatePDF()" class="hidden px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded shadow flex items-center gap-2 text-sm"><i class="fas fa-file-pdf"></i> Descargar PDF</button>
+                        <div class="flex gap-2 ml-auto">
+                            <button type="button" onclick="closeFeedback()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded text-sm font-bold">Cancelar</button>
+                            <button type="submit" id="btnSaveFeedback" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded shadow flex items-center gap-2 text-sm"><i class="fas fa-save"></i> Guardar Registro</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
 
-        <div id="dashboard" class="hidden space-y-6 animate-fade-in">
+        <div id="errorBox" class="hidden mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded shadow-sm"><p class="text-sm text-red-800 font-bold" id="errorTitle">Error</p><p class="text-xs text-red-600 mt-1" id="errorDetail">...</p></div>
+        <div id="fallbackZone" class="hidden mb-6"><label class="block w-full bg-white border-2 border-dashed border-orange-300 rounded-xl p-6 text-center cursor-pointer hover:bg-orange-50"><span class="text-orange-600 font-bold text-sm">Modo Offline: Cargar Excel</span><input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls"></label></div>
+
+        <div id="dashboard" class="hidden space-y-6 animate-fade-in pb-20">
+            
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col xl:flex-row gap-4 items-end">
                 <div class="w-full xl:w-auto flex flex-col gap-1">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Periodo Detectado</label>
-                    <div class="flex gap-2 items-center bg-slate-50 p-1 rounded-lg border border-slate-200">
-                        <button onclick="setFullRange()" class="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 shadow-sm rounded hover:bg-blue-200">Todo</button>
-                        <div class="h-4 w-px bg-slate-300 mx-1"></div>
-                        <input type="date" id="dateStart" class="bg-transparent text-xs outline-none w-28">
-                        <span class="text-slate-400">-</span>
-                        <input type="date" id="dateEnd" class="bg-transparent text-xs outline-none w-28">
-                    </div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Periodo</label>
+                    <div class="flex gap-2 items-center bg-slate-50 p-1 rounded-lg border border-slate-200"><button onclick="setFullRange()" class="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded">Todo</button><input type="date" id="dateStart" class="bg-transparent text-xs w-28 outline-none"><input type="date" id="dateEnd" class="bg-transparent text-xs w-28 outline-none"></div>
                 </div>
                 <div class="flex-grow md:w-1/4">
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Servicio</label>
-                    <select id="serviceFilter" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none"><option value="">Todos</option></select>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Supervisor</label>
+                    <select id="supervisorFilter" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-sm outline-none">
+                        <option value="">Todos los Equipos</option>
+                        <option value="Luis Cataldo">Luis Cataldo</option>
+                        <option value="Angélica Ferrada">Angélica Ferrada</option>
+                        <option value="Carla Cabrera">Carla Cabrera</option>
+                    </select>
                 </div>
-                <div class="flex-grow md:w-1/3">
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Buscar</label>
-                    <input type="text" id="agentSearch" placeholder="Nombre..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none">
+                <div class="flex-grow md:w-1/3 relative">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Buscar Ejecutivo</label>
+                    <input list="agentsList" id="agentSearch" placeholder="Escribe el nombre..." class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-sm outline-none">
+                    <datalist id="agentsList"></datalist>
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="applyFilters()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-1.5 rounded-lg text-sm font-semibold">Filtrar</button>
-                    <button onclick="clearFilters()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-1.5 rounded-lg text-sm font-semibold">Limpiar</button>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 relative">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Productividad</p>
-                    <p class="text-3xl font-bold text-slate-800 mt-1" id="kpiGlobalProd">0%</p>
-                    <p class="text-[10px] text-green-600 mt-1">Hablado / (Contrato - Almuerzo)</p>
-                </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 relative">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Adherencia</p>
-                    <p class="text-3xl font-bold text-slate-800 mt-1" id="kpiGlobalAdh">0%</p>
-                    <p class="text-[10px] text-teal-600 mt-1">Conectado / (Contrato - Almuerzo)</p>
-                </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 relative">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ocupación</p>
-                    <p class="text-3xl font-bold text-slate-800 mt-1" id="kpiGlobalOcc">0%</p>
-                    <p class="text-[10px] text-orange-600 mt-1">(Hablado+ACW) / Conectado Real</p>
-                </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 relative">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">TMO Global</p>
-                    <p class="text-3xl font-bold text-slate-800 mt-1" id="kpiGlobalTMO">00:00</p>
-                    <p class="text-[10px] text-indigo-600 mt-1">Hablado / Llamadas</p>
+                <div class="flex gap-2 items-center">
+                    <button id="btnToggleFeed" onclick="toggleFeedbackFilter()" class="bg-white border border-slate-300 text-slate-500 px-3 py-1.5 rounded text-sm font-bold shadow-sm transition-colors flex items-center gap-1" title="Ver solo con Feedback">
+                        <i class="fas fa-star"></i> Solo Feed
+                    </button>
+                    <button onclick="applyFilters()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-1.5 rounded text-sm font-bold shadow-sm transition-colors">Filtrar</button>
+                    <button onclick="clearFilters()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-1.5 rounded text-sm font-bold transition-colors">Limpiar</button>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
-                    <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Evolución Productividad</h4>
-                    <div class="h-40 relative"><canvas id="chartProd"></canvas></div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 clickable-card hover-card relative overflow-hidden group" onclick="filterBySupCard('Luis Cataldo')">
+                    <div class="absolute right-0 top-0 h-full w-1 bg-blue-500"></div>
+                    <div class="flex justify-between items-start mb-3">
+                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Equipo</p><h3 class="text-lg font-bold text-slate-800">Luis Cataldo</h3></div>
+                        <div class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold" id="badge_Luis_Cataldo">0</div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs mb-2">
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">Prod</p><p class="font-bold text-blue-600" id="sup_prod_Luis_Cataldo">0%</p></div>
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">Adh</p><p class="font-bold text-teal-600" id="sup_adh_Luis_Cataldo">0%</p></div>
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">Ocup</p><p class="font-bold text-orange-600" id="sup_occ_Luis_Cataldo">0%</p></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">TMO</p><p class="font-bold text-indigo-600" id="sup_tmo_Luis_Cataldo">00:00</p></div>
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">Idle</p><p class="font-bold text-gray-600" id="sup_idle_Luis_Cataldo">00:00</p></div>
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">Feed</p><p class="font-bold text-purple-600" id="sup_feed_Luis_Cataldo">0</p></div>
+                    </div>
                 </div>
-                <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
-                    <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Evolución TMO</h4>
-                    <div class="h-40 relative"><canvas id="chartTMO"></canvas></div>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 clickable-card hover-card relative overflow-hidden group" onclick="filterBySupCard('Angélica Ferrada')">
+                    <div class="absolute right-0 top-0 h-full w-1 bg-pink-500"></div>
+                    <div class="flex justify-between items-start mb-3">
+                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Equipo</p><h3 class="text-lg font-bold text-slate-800">Angélica Ferrada</h3></div>
+                        <div class="bg-pink-100 text-pink-700 px-2 py-1 rounded text-xs font-bold" id="badge_Angélica_Ferrada">0</div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs mb-2">
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">Prod</p><p class="font-bold text-blue-600" id="sup_prod_Angélica_Ferrada">0%</p></div>
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">Adh</p><p class="font-bold text-teal-600" id="sup_adh_Angélica_Ferrada">0%</p></div>
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">Ocup</p><p class="font-bold text-orange-600" id="sup_occ_Angélica_Ferrada">0%</p></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">TMO</p><p class="font-bold text-indigo-600" id="sup_tmo_Angélica_Ferrada">00:00</p></div>
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">Idle</p><p class="font-bold text-gray-600" id="sup_idle_Angélica_Ferrada">00:00</p></div>
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">Feed</p><p class="font-bold text-purple-600" id="sup_feed_Angélica_Ferrada">0</p></div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 clickable-card hover-card relative overflow-hidden group" onclick="filterBySupCard('Carla Cabrera')">
+                    <div class="absolute right-0 top-0 h-full w-1 bg-orange-500"></div>
+                    <div class="flex justify-between items-start mb-3">
+                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Equipo</p><h3 class="text-lg font-bold text-slate-800">Carla Cabrera</h3></div>
+                        <div class="bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs font-bold" id="badge_Carla_Cabrera">0</div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs mb-2">
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">Prod</p><p class="font-bold text-blue-600" id="sup_prod_Carla_Cabrera">0%</p></div>
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">Adh</p><p class="font-bold text-teal-600" id="sup_adh_Carla_Cabrera">0%</p></div>
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">Ocup</p><p class="font-bold text-orange-600" id="sup_occ_Carla_Cabrera">0%</p></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">TMO</p><p class="font-bold text-indigo-600" id="sup_tmo_Carla_Cabrera">00:00</p></div>
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">Idle</p><p class="font-bold text-gray-600" id="sup_idle_Carla_Cabrera">00:00</p></div>
+                        <div class="bg-slate-50 p-1 rounded border border-slate-100"><p class="text-slate-400 text-[9px]">Feed</p><p class="font-bold text-purple-600" id="sup_feed_Carla_Cabrera">0</p></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-3">
-                <div id="rankContainerProd" class="bg-white rounded-lg shadow-sm border border-slate-200 h-80 flex flex-col"></div>
-                <div id="rankContainerAdh" class="bg-white rounded-lg shadow-sm border border-slate-200 h-80 flex flex-col"></div>
-                <div id="rankContainerOcc" class="bg-white rounded-lg shadow-sm border border-slate-200 h-80 flex flex-col"></div>
-                <div id="rankContainerTMO" class="bg-white rounded-lg shadow-sm border border-slate-200 h-80 flex flex-col"></div>
-                <div id="rankContainerIdle" class="bg-white rounded-lg shadow-sm border border-slate-200 h-80 flex flex-col"></div>
-                <div id="rankContainerACW" class="bg-white rounded-lg shadow-sm border border-slate-200 h-80 flex flex-col"></div>
-                <div id="rankContainerCalls" class="bg-white rounded-lg shadow-sm border border-slate-200 h-80 flex flex-col"></div>
-                <div id="rankContainerShort" class="bg-white rounded-lg shadow-sm border border-red-200 h-80 flex flex-col"></div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                <h4 class="text-xs font-bold text-slate-500 uppercase mb-4 border-b pb-2">Evolución de Indicadores</h4>
+                <div class="h-48 relative w-full"><canvas id="chartEvolution"></canvas></div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-[10px] font-bold text-blue-500 uppercase">Productividad</p>
+                    <p class="text-2xl font-bold text-blue-600" id="kpiGlobalProd">0%</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-[10px] font-bold text-teal-600 uppercase">Adherencia</p>
+                    <p class="text-2xl font-bold text-teal-600" id="kpiGlobalAdh">0%</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-[10px] font-bold text-orange-500 uppercase">Ocupación</p>
+                    <p class="text-2xl font-bold text-orange-600" id="kpiGlobalOcc">0%</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-[10px] font-bold text-indigo-500 uppercase">TMO Global</p>
+                    <p class="text-2xl font-bold text-indigo-600" id="kpiGlobalTMO">00:00</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-[10px] font-bold text-gray-500 uppercase">Idle (Avg ACW)</p>
+                    <p class="text-2xl font-bold text-gray-600" id="kpiGlobalIdle">00:00</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div id="rankContainerProd" class="bg-white rounded-lg shadow-sm border border-slate-200 h-64 flex flex-col hover:border-blue-300 transition-colors"></div>
+                <div id="rankContainerAdh" class="bg-white rounded-lg shadow-sm border border-slate-200 h-64 flex flex-col hover:border-teal-300 transition-colors"></div>
+                <div id="rankContainerOcc" class="bg-white rounded-lg shadow-sm border border-slate-200 h-64 flex flex-col hover:border-orange-300 transition-colors"></div>
+                <div id="rankContainerTMO" class="bg-white rounded-lg shadow-sm border border-slate-200 h-64 flex flex-col hover:border-indigo-300 transition-colors"></div>
+                <div id="rankContainerIdle" class="bg-white rounded-lg shadow-sm border border-slate-200 h-64 flex flex-col hover:border-gray-300 transition-colors"></div>
+                <div id="rankContainerCalls" class="bg-white rounded-lg shadow-sm border border-slate-200 h-64 flex flex-col hover:border-slate-300 transition-colors"></div>
             </div>
 
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                    <h3 class="text-sm font-bold text-slate-600 uppercase">Detalle Diario</h3>
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                    <h3 class="text-sm font-bold text-slate-600 uppercase flex items-center gap-2">
+                        <i class="fas fa-list"></i> Detalle Diario
+                    </h3>
                     <div class="flex gap-2 items-center">
                         <span id="rowCount" class="text-xs font-medium text-slate-400 bg-white border border-slate-200 px-2 py-1 rounded">0 reg</span>
-                        <button onclick="exportTableOnly()" class="text-emerald-600 hover:text-emerald-700 text-xs font-bold underline">Descargar</button>
+                        <button onclick="exportTableOnly()" class="text-emerald-600 hover:text-emerald-700 text-xs font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-100 transition-colors">Descargar</button>
                     </div>
                 </div>
-                <div class="overflow-x-auto scroller max-h-[600px]">
+                <div class="overflow-x-auto scroller">
                     <table class="w-full text-sm text-left border-collapse" id="mainTable">
-                        <thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm">
+                        <thead class="text-[10px] text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm font-bold tracking-wider">
                             <tr>
-                                <th class="px-3 py-3" onclick="sort('fecha')">Fecha</th>
-                                <th class="px-3 py-3" onclick="sort('agente')">Agente</th>
-                                <th class="px-3 py-3 text-center" onclick="sort('t_contratado')">Turno</th>
-                                <th class="px-3 py-3 text-right bg-slate-100" onclick="sort('t_conectado_real')">Conectado</th>
-                                <th class="px-3 py-3 text-right" onclick="sort('c_calls')">Llamadas</th>
-                                <th class="px-3 py-3 text-right text-indigo-600" onclick="sort('tmo')">TMO</th>
-                                <th class="px-3 py-3 text-right text-green-700" onclick="sort('t_hablado')">Hablado</th>
-                                <th class="px-3 py-3 text-right text-purple-600" onclick="sort('t_acw')">ACW</th>
-                                <th class="px-3 py-3 text-right text-gray-500" onclick="sort('idle')">IDLE</th>
-                                <th class="px-3 py-3 text-right text-slate-500" onclick="sort('t_almuerzo')">Almuerzo</th>
-                                <th class="px-3 py-3 text-right text-slate-500" onclick="sort('t_break')">Break</th>
-                                <th class="px-3 py-3 text-right text-cyan-600" onclick="sort('t_bano')">Baño</th>
-                                <th class="px-3 py-3 text-center text-red-600 bg-red-50 border-l" onclick="sort('short_call_pct')">Cortas <45s</th>
-                                <th class="px-3 py-3 text-center bg-blue-50 text-blue-700 border-l" onclick="sort('prod')">Prod %</th>
-                                <th class="px-3 py-3 text-center bg-teal-50 text-teal-700" onclick="sort('adh')">Adh %</th>
-                                <th class="px-3 py-3 text-center bg-orange-50 text-orange-700" onclick="sort('occ')">Ocup %</th>
+                                <th class="px-2 py-3 cursor-pointer hover:bg-slate-100" onclick="sort('fecha')">Fecha</th>
+                                <th class="px-2 py-3 cursor-pointer hover:bg-slate-100" onclick="sort('agente')">Agente</th>
+                                <th class="px-2 py-3 text-center text-blue-600 bg-blue-50/50">Turno</th>
+                                <th class="px-2 py-3 text-center text-red-600">Atraso</th>
+                                <th class="px-2 py-3 text-center text-red-600">Desc.</th>
+                                <th class="px-2 py-3 text-right">Calls</th>
+                                <th class="px-2 py-3 text-right text-indigo-600">TMO</th>
+                                <th class="px-2 py-3 text-right text-green-700">Hablado</th>
+                                <th class="px-2 py-3 text-right text-purple-600">ACW</th>
+                                <th class="px-2 py-3 text-right text-gray-500" title="Promedio ACW">IDLE</th>
+                                <th class="px-2 py-3 text-right cursor-pointer hover:bg-slate-100" onclick="sort('t_cap')" title="Capacitación">Cap</th>
+                                <th class="px-2 py-3 text-right cursor-pointer hover:bg-slate-100" onclick="sort('t_admin')" title="Administrativo">Adm</th>
+                                <th class="px-2 py-3 text-right cursor-pointer hover:bg-slate-100" onclick="sort('t_bano')" title="Baño">Bñ</th>
+                                <th class="px-2 py-3 text-right cursor-pointer hover:bg-slate-100" onclick="sort('t_break')" title="Break">Brk</th>
+                                <th class="px-2 py-3 text-right cursor-pointer hover:bg-slate-100" onclick="sort('t_almuerzo')" title="Almuerzo">Alm</th>
+                                <th class="px-2 py-3 text-center bg-blue-50 text-blue-700 border-l">Prod</th>
+                                <th class="px-2 py-3 text-center bg-teal-50 text-teal-700">Adh</th>
+                                <th class="px-2 py-3 text-center bg-orange-50 text-orange-700">Ocup</th>
                             </tr>
                         </thead>
-                        <tbody id="tableBody" class="divide-y divide-slate-100 text-slate-600"></tbody>
+                        <tbody id="tableBody" class="divide-y divide-slate-100 text-slate-600 text-xs"></tbody>
                     </table>
+                </div>
+                <div class="p-3 bg-slate-50 border-t border-slate-200 text-center">
+                    <button id="btnLoadMore" onclick="loadMoreRows()" class="hidden text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline">Ver más registros...</button>
                 </div>
             </div>
         </div>
     </main>
 
 <script>
-    let GLOBAL_DATA = [], FILTERED_DATA = [], charts = {};
-    let cardSortState = { prod:-1, tmo:-1, adh:-1, occ:-1, t_acw:-1, idle:-1, c_calls:-1, short_call_pct:-1 };
-    let minDate, maxDate;
-
-    // --- CONFIG ---
-    const KPI_DESCRIPTIONS = {
-        'prod': "PRODUCTIVIDAD: Tiempo Hablado / (Turno Contratado - Almuerzo Aprox).",
-        'adh': "ADHERENCIA: Tiempo Conectado Real / (Turno Contratado - Almuerzo Aprox).",
-        'occ': "OCUPACIÓN: (Hablado + ACW) / Tiempo Conectado Real.",
-        'tmo': "TMO: Tiempo Hablado Total / Cantidad de Llamadas.",
-        'idle': "IDLE: Tiempo ACW Total / Cantidad de Llamadas.",
-        't_acw': "ACW TOTAL: Suma total del tiempo administrativo.",
-        'c_calls': "LLAMADAS: Cantidad total de llamadas gestionadas.",
-        'short_call_pct': "CORTAS <45s: % de llamadas menores a 45 seg sobre el total del ejecutivo."
+    const { jsPDF } = window.jspdf;
+    let GLOBAL_DATA = [], FILTERED_DATA = [], FEEDBACK_DATA = [], charts = {};
+    let UNIQUE_AGENTS = new Set();
+    let currentFeedbackRow = null;
+    let cardSortState = { prod:-1, tmo:-1, adh:-1, occ:-1, idle:-1, calls:-1 };
+    let VISIBLE_ROWS = 20;
+    let SHOW_ONLY_FEEDBACK = false;
+    
+    const MANUAL_TEAMS = {
+        "Luis Cataldo": ["Cristina Baron", "Cristobal Fernandez", "Angelica Galleguillos", "Paola Herrera", "Edith Ossandon", "Andreina Villalon"],
+        "Angélica Ferrada": ["Diego Cea", "Carla Garay", "Yessenia Gonzalez", "Oscar Hidalgo", "Adrian Manzanilla", "Joanna Rojas"],
+        "Carla Cabrera": ["Lesli Agudelo", "Miriam Bruges", "Maria Faria", "Johanna Herrera", "Saymar Paez", "Lorena Rodriguez", "Jorge Yanez"]
     };
-    const THRESHOLD_SHORT_CALL = 45; 
 
-    // --- INIT ---
     window.addEventListener('DOMContentLoaded', () => {
         const savedUrl = localStorage.getItem('cc_dashboard_api_url');
-        if(savedUrl) {
-            document.getElementById('apiUrlInput').value = savedUrl;
-            connectToSheet(savedUrl);
+        if(savedUrl) { document.getElementById('apiUrlInput').value = savedUrl; connectToSheet(savedUrl); } else showConfig();
+    });
+
+    function showConfig() { document.getElementById('configPanel').classList.remove('hidden'); }
+    function closeConfig() { document.getElementById('configPanel').classList.add('hidden'); if(GLOBAL_DATA.length===0) document.getElementById('fallbackZone').classList.remove('hidden'); }
+    function saveConfig() { const u=document.getElementById('apiUrlInput').value.trim(); if(!u) return; localStorage.setItem('cc_dashboard_api_url',u); closeConfig(); connectToSheet(u); }
+    
+    function getManualSup(agentName) {
+        const clean = cleanName(agentName);
+        for(const [sup, members] of Object.entries(MANUAL_TEAMS)) {
+            if(members.some(m => cleanName(m) === clean)) return sup;
+        }
+        return null;
+    }
+
+    function openFeedbackModal(agente, fecha) {
+        currentFeedbackRow = FEEDBACK_DATA.find(f => cleanName(f.ejecutivo) === cleanName(agente) && normalizeDate(f.fecha_desviacion) === normalizeDate(fecha));
+        document.getElementById('fbEjecutivo').value = agente; document.getElementById('fbFechaDesv').value = fecha;
+        const banner = document.getElementById('fbStatusBanner'), btnSave = document.getElementById('btnSaveFeedback'), btnPdf = document.getElementById('btnPdf');
+        document.getElementById('formFeedback').reset();
+        document.getElementById('fbEjecutivo').value = agente; document.getElementById('fbFechaDesv').value = fecha;
+
+        if (currentFeedbackRow) {
+            banner.classList.remove('hidden', 'bg-blue-100', 'text-blue-800'); banner.classList.add('bg-green-100', 'text-green-800'); banner.innerHTML = '<i class="fas fa-check-circle"></i> Feedback Realizado';
+            document.getElementById('fbEvaluador').value = currentFeedbackRow.evaluador;
+            document.getElementById('fbFechaFeed').value = normalizeDate(currentFeedbackRow.fecha_feedback);
+            document.getElementById('fbHoraFeed').value = currentFeedbackRow.hora_feedback;
+            document.getElementById('fbAudio').value = currentFeedbackRow.grabacion_audio;
+            document.getElementById('fbIndicador').value = currentFeedbackRow.indicador;
+            document.getElementById('fbDetalle').value = currentFeedbackRow.detalle_quiebre;
+            document.getElementById('fbObservacion').value = currentFeedbackRow.obv_ejecutivo;
+            document.getElementById('fbCompromiso').value = currentFeedbackRow.compromiso;
+            const inputs = document.querySelectorAll('#formFeedback input:not([readonly]), #formFeedback select, #formFeedback textarea');
+            inputs.forEach(i => i.disabled = true);
+            btnSave.classList.add('hidden'); btnPdf.classList.remove('hidden');
         } else {
-            showConfig();
+            banner.classList.add('hidden');
+            const inputs = document.querySelectorAll('#formFeedback input, #formFeedback select, #formFeedback textarea');
+            inputs.forEach(i => i.disabled = false);
+            document.getElementById('fbFechaFeed').value = new Date().toISOString().split('T')[0];
+            document.getElementById('fbHoraFeed').value = new Date().toTimeString().split(' ')[0].substring(0,5);
+            btnSave.classList.remove('hidden'); btnPdf.classList.add('hidden');
         }
+        document.getElementById('feedbackPanel').classList.remove('hidden');
+    }
+    function closeFeedback() { document.getElementById('feedbackPanel').classList.add('hidden'); }
+    
+    document.getElementById('formFeedback').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const url = localStorage.getItem('cc_dashboard_api_url');
+        const btn = document.getElementById('btnSaveFeedback'); btn.innerHTML = '<div class="spinner border-white"></div> Guardando...'; btn.disabled = true;
+        const payload = { type: "save_feedback", evaluador: this.evaluador.value, ejecutivo: this.ejecutivo.value, fecha_desv: this.fecha_desv.value, fecha_feed: this.fecha_feed.value, hora_feed: this.hora_feed.value, audio: this.audio.value, indicador: this.indicador.value, detalle: this.detalle.value, observacion: this.observacion.value, compromiso: this.compromiso.value };
+        fetch(url, { method: 'POST', body: JSON.stringify(payload) }).then(r => r.json()).then(res => { if(res.result === "success") { Swal.fire("Éxito", "Feedback registrado.", "success").then(() => location.reload()); } else throw new Error(res.error); }).catch(err => Swal.fire("Error", err.message, "error")).finally(() => { btn.innerHTML = '<i class="fas fa-save"></i> Guardar Registro'; btn.disabled = false; });
     });
 
-    // --- CONFIG UI ---
-    function showConfig() {
-        document.getElementById('configPanel').classList.remove('hidden');
-    }
-    function closeConfig() {
-        document.getElementById('configPanel').classList.add('hidden');
-        // Si no hay datos y cerramos, mostrar fallback
-        if(GLOBAL_DATA.length === 0) {
-            document.getElementById('fallbackZone').classList.remove('hidden');
-            document.getElementById('statusIndicator').innerText = "Sin conexión";
-        }
-    }
-    function saveConfig() {
-        const url = document.getElementById('apiUrlInput').value.trim();
-        if(!url) return alert("Ingresa una URL válida");
-        localStorage.setItem('cc_dashboard_api_url', url);
-        closeConfig();
-        connectToSheet(url);
+    function generatePDF() {
+        if(!currentFeedbackRow) return;
+        const doc = new jsPDF();
+        doc.setFillColor(79, 70, 229); doc.rect(0, 0, 210, 25, 'F');
+        doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.text("Registro de Feedback y Compromiso", 105, 15, null, null, "center");
+        doc.setTextColor(0, 0, 0); doc.setFontSize(10);
+        let y = 40; const addField = (lbl, val) => { doc.setFont("helvetica", "bold"); doc.text(lbl, 20, y); doc.setFont("helvetica", "normal"); doc.text(String(val), 80, y, {maxWidth: 110}); y += 10; };
+        addField("Ejecutivo:", currentFeedbackRow.ejecutivo); addField("Evaluador:", currentFeedbackRow.evaluador); addField("Fecha Desviación:", normalizeDate(currentFeedbackRow.fecha_desviacion)); addField("Fecha Feedback:", normalizeDate(currentFeedbackRow.fecha_feedback) + " " + currentFeedbackRow.hora_feedback); addField("Indicador Afectado:", currentFeedbackRow.indicador);
+        y+=5; doc.setFont("helvetica", "bold"); doc.text("Detalle del Quiebre:", 20, y); y+=7; doc.setFont("helvetica", "normal"); const splitDetalle = doc.splitTextToSize(currentFeedbackRow.detalle_quiebre, 170); doc.text(splitDetalle, 20, y); y += (splitDetalle.length * 7) + 10;
+        doc.setFont("helvetica", "bold"); doc.text("Compromiso / Acuerdo:", 20, y); y+=7; doc.setFont("helvetica", "normal"); const splitComp = doc.splitTextToSize(currentFeedbackRow.compromiso, 170); doc.text(splitComp, 20, y);
+        y = 250; doc.setLineWidth(0.5); doc.line(30, y, 90, y); doc.line(120, y, 180, y); doc.setFontSize(8); doc.text(currentFeedbackRow.evaluador, 60, y+5, null, null, "center"); doc.text("Firma Evaluador", 60, y+10, null, null, "center"); doc.text(currentFeedbackRow.ejecutivo, 150, y+5, null, null, "center"); doc.text("Firma Ejecutivo", 150, y+10, null, null, "center");
+        doc.save(`Feedback_${cleanName(currentFeedbackRow.ejecutivo)}.pdf`);
     }
 
-    // --- CONNECT ---
     async function connectToSheet(url) {
-        const status = document.getElementById('statusIndicator');
-        const errorBox = document.getElementById('errorBox');
-        
-        status.innerText = "Consultando Cloud...";
-        status.className = "text-xs font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full animate-pulse";
-        errorBox.classList.add('hidden');
-        document.getElementById('fallbackZone').classList.add('hidden');
-
+        document.getElementById('statusIndicator').innerHTML = '<div class="spinner"></div> Conectando...'; document.getElementById('statusIndicator').className = "text-[10px] font-bold text-blue-500 border border-blue-100 bg-blue-50 px-2 py-1 rounded flex items-center gap-1";
         try {
-            const response = await fetch(url);
-            if (!response.ok) {
-                // Si es redirect opaco (Apps Script a veces lo hace), intentar tratarlo
-                throw new Error("Error HTTP " + response.status + ". Revisa que el script tenga permisos 'Cualquier usuario'.");
-            }
-            
-            const data = await response.json();
-            
-            if (!data.detalle || !data.estados) throw new Error("El script devolvió datos, pero no tienen el formato esperado (falta 'detalle' o 'estados').");
-
-            processJSON(data.detalle, data.estados);
-            
-            status.innerText = "En Línea 🟢";
-            status.className = "text-xs font-bold text-green-600 bg-green-100 px-3 py-1 rounded-full";
-
-        } catch (err) {
-            console.error(err);
-            status.innerText = "Error 🔴";
-            status.className = "text-xs font-bold text-red-600 bg-red-100 px-3 py-1 rounded-full";
-            
-            errorBox.classList.remove('hidden');
-            document.getElementById('errorTitle').innerText = "Fallo de Conexión con Google Sheets";
-            document.getElementById('errorDetail').innerText = err.message;
-            
-            document.getElementById('fallbackZone').classList.remove('hidden');
-        }
+            const r = await fetch(url); const d = await r.json();
+            const toObj = (rows) => { if(!rows||rows.length<2)return[]; const h=rows[0].map(x=>String(x).trim().toLowerCase().replace(/ /g,'_')); return rows.slice(1).map(r=>{ let o={}; h.forEach((k,i)=>{ o[k]=r[i]!==undefined?r[i]:""; }); return o; }); };
+            if(d.feedback) FEEDBACK_DATA = toObj(d.feedback);
+            processJSON(d.detalle, d.estados, d.digital||[]);
+            document.getElementById('statusIndicator').innerHTML = '<span class="text-green-500">●</span> En Línea'; document.getElementById('statusIndicator').className = "text-[10px] font-bold text-green-600 border border-green-200 bg-green-50 px-2 py-1 rounded flex items-center gap-1";
+        } catch(e) { document.getElementById('statusIndicator').innerHTML = '<span class="text-red-500">●</span> Error'; document.getElementById('statusIndicator').className = "text-[10px] font-bold text-red-600 border border-red-200 bg-red-50 px-2 py-1 rounded flex items-center gap-1"; document.getElementById('errorBox').classList.remove('hidden'); document.getElementById('errorDetail').innerText=e.message; }
     }
 
-    // --- DATA PROCESSING (JSON) ---
-    function processJSON(rowsDetail, rowsStates) {
-        const toObj = (rows) => {
-            if(!rows || rows.length < 2) return [];
-            const headers = rows[0].map(h => String(h).trim());
-            return rows.slice(1).map(row => {
-                let obj = {};
-                headers.forEach((h, i) => {
-                    obj[h] = row[i] !== undefined ? row[i] : "";
-                });
-                return obj;
-            });
-        };
-
-        const jsonDetail = toObj(rowsDetail);
-        const jsonStates = toObj(rowsStates);
-
-        if(!jsonDetail.length) throw new Error("La hoja de detalle está vacía.");
-        analyzeData(jsonDetail, jsonStates);
+    function processJSON(rowsDetail, rowsStates, rowsDigital) {
+        const toObj = (rows) => { if(!rows || rows.length < 2) return []; const headers = rows[0].map(h => String(h).trim()); return rows.slice(1).map(row => { let obj = {}; headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? row[i] : ""; }); return obj; }); };
+        analyzeData(toObj(rowsDetail), toObj(rowsStates), toObj(rowsDigital));
     }
 
-    // --- MANUAL FILE ---
-    document.getElementById('fileInput').addEventListener('change', (e) => {
-        if(e.target.files.length) processManualFile(e.target.files[0]);
-    });
-
-    function processManualFile(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array', cellDates: true});
-                let detailSheet = workbook.SheetNames.find(n => n.toLowerCase().includes('detalle') || n.toLowerCase().includes('reporte'));
-                let stateSheet = workbook.SheetNames.find(n => n.toLowerCase().includes('estado') || n.toLowerCase().includes('turno'));
-                if(!detailSheet) detailSheet = workbook.SheetNames[0];
-                const jsonDetail = XLSX.utils.sheet_to_json(workbook.Sheets[detailSheet], {defval:""});
-                const jsonStates = stateSheet ? XLSX.utils.sheet_to_json(workbook.Sheets[stateSheet], {defval:""}) : [];
-                if(!jsonDetail.length) throw new Error("Hoja vacía");
-                analyzeData(jsonDetail, jsonStates);
-                document.getElementById('fallbackZone').classList.add('hidden');
-                document.getElementById('errorBox').classList.add('hidden');
-            } catch(err) {
-                alert("Error archivo: " + err.message);
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    }
-
-    // --- ANALYTICS CORE ---
     const norm = (s) => String(s||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const pad = (n) => n.toString().padStart(2, '0');
-    
-    function normalizeDate(val) {
-        if(!val) return "";
-        if(val instanceof Date) return val.toISOString().split('T')[0];
-        if(typeof val === 'number' && val > 20000) {
-            const d = new Date(Math.round((val - 25569)*86400*1000));
-            return d.toISOString().split('T')[0];
-        }
-        let s = String(val).trim();
-        if(s.includes('/')) {
-            const p = s.split('/');
-            return (parseInt(p[0])>1000) ? `${p[0]}-${pad(p[1])}-${pad(p[2])}` : `${p[2]}-${pad(p[1])}-${pad(p[0])}`;
-        }
-        return s;
-    }
+    function normalizeDate(val) { if(!val) return ""; if(val instanceof Date) return val.toISOString().split('T')[0]; if(typeof val === 'number' && val > 20000) return new Date(Math.round((val - 25569)*86400*1000)).toISOString().split('T')[0]; let s = String(val).trim(); if(s.includes('/')) { const p = s.split('/'); return (parseInt(p[0])>1000) ? `${p[0]}-${pad(p[1])}-${pad(p[2])}` : `${p[2]}-${pad(p[1])}-${pad(p[0])}`; } if(s.includes('T')) return s.split('T')[0]; return s; }
+    function timeToSec(val) { if(!val) return 0; if(typeof val === 'number') return Math.round(val * 86400); const s = String(val).trim(); if(s.includes(':')) { const p = (s.split(' ')[1] || s).split(':').map(Number); return p[0]*3600 + p[1]*60 + (p[2]||0); } return 0; }
+    function secToTime(s, short=false) { if(!s || s<0) return short?"00:00":"00:00:00"; const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=Math.floor(s%60); return short ? `${pad(m)}:${pad(sec)}` : `${pad(h)}:${pad(m)}:${pad(sec)}`; }
+    function cleanName(n) { return String(n||"").replace(/\./g, ' ').replace(/\s+/g, ' ').trim().toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, l => l.toUpperCase()); }
+    function getVal(row, keywords) { const keys = Object.keys(row); const k = keys.find(key => keywords.some(kw => key.toLowerCase() === kw.toLowerCase() || key.toLowerCase().includes(kw.toLowerCase()))); return k ? row[k] : undefined; }
 
-    function timeToSec(val) {
-        if(val == null || val === "") return 0;
-        if(typeof val === 'number') return Math.round(val * 86400); 
-        // Si viene de Apps Script como string "HH:mm:ss"
-        const s = String(val).trim();
-        if(s.includes(':')) {
-            const timePart = s.split(' ')[1] || s; // "2024-01-01 10:00" -> "10:00"
-            const parts = timePart.split(':').map(Number);
-            return parts[0]*3600 + parts[1]*60 + (parts[2]||0);
-        }
-        if(val instanceof Date) return val.getHours()*3600 + val.getMinutes()*60 + val.getSeconds();
-        return 0;
-    }
+    function analyzeData(detailRows, stateRows, digitalRows) {
+        UNIQUE_AGENTS.clear();
+        const shiftMap = {}; 
+        const supervisorMap = {}; 
 
-    function secToTime(s, short=false) {
-        if(!s || s<0) return short?"00:00":"00:00:00";
-        const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=Math.floor(s%60);
-        return short ? `${pad(m)}:${pad(sec)}` : `${pad(h)}:${pad(m)}:${pad(sec)}`;
-    }
+        stateRows.forEach(row => { 
+            const a = getVal(row, ['agente','nombre']); 
+            const f = getVal(row, ['fecha','dia']); 
+            if(a && f) {
+                const key = `${cleanName(a)}|${normalizeDate(f)}`;
+                let sup = getManualSup(a); 
+                if(!sup) sup = getVal(row, ['supervisor', 'team leader', 'jefe']);
+                if(sup) supervisorMap[cleanName(a)] = cleanName(sup);
 
-    function cleanName(n) {
-        let s = String(n||"").replace(/\./g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
-        return s.replace(/(^\w{1})|(\s+\w{1})/g, l => l.toUpperCase());
-    }
-
-    function detectService(agentName) {
-        const name = agentName.toLowerCase();
-        if (name.includes('mesa') || name.includes('central')) return 'Mesa Central';
-        if (name.includes('bloqueo')) return 'Bloqueo';
-        if (name.includes('ingreso')) return 'Ingreso';
-        const parts = agentName.split('.');
-        if(parts.length > 1) {
-            const prefix = parts[0].toLowerCase();
-            if(prefix === 'mesa') return 'Mesa Central';
-            if(prefix === 'bloqueo') return 'Bloqueo';
-            if(prefix === 'ing' || prefix === 'ingreso') return 'Ingreso';
-            if(prefix === 'camp' || prefix === 'campana') return 'Campaña';
-        }
-        if(name.includes('diego') || name.includes('belfred')) return 'Mesa Central'; 
-        if(name.includes('joanna')) return 'Ingreso';
-        if(name.includes('paola')) return 'Bloqueo';
-        return 'General';
-    }
-
-    function getVal(row, keywords) {
-        const keys = Object.keys(row);
-        const k = keys.find(key => keywords.some(kw => key.toLowerCase().includes(kw)));
-        return k ? row[k] : undefined;
-    }
-
-    function analyzeData(detailRows, stateRows) {
-        const shiftMap = {};
-        stateRows.forEach(row => {
-            const rawAgente = getVal(row, ['agente', 'nombre']);
-            const rawFecha = getVal(row, ['fecha', 'dia']);
-            const rawStart = getVal(row, ['inicio turnor', 'inicio turno', 'entrada']); 
-            const rawEnd = getVal(row, ['fin turno', 'fin turnor', 'salida']);
-            
-            if(rawAgente && rawFecha) {
-                const key = `${cleanName(rawAgente)}|${normalizeDate(rawFecha)}`;
-                shiftMap[key] = { start: rawStart, end: rawEnd };
+                const startRule = getVal(row, ['inicio turnor regla', 'entrada planificada', 'turno inicio']);
+                const endRule = getVal(row, ['fin turno regla', 'salida planificada', 'turno fin']);
+                shiftMap[key] = { start: getVal(row, ['inicio turnor','inicio']), end: getVal(row, ['fin turno','fin']), ruleStart: startRule, ruleEnd: endRule }; 
             }
         });
+        
+        const digitalMap = {};
+        digitalRows.forEach(row => { const f=getVal(row, ['fecha']), a=getVal(row, ['agente']), h=getVal(row, ['horas']); if(f&&a&&h) { const key=`${cleanName(a)}|${normalizeDate(f)}`; digitalMap[key]=(digitalMap[key]||0) + parseFloat(h)*3600; } });
 
         const groups = {};
-        detailRows.forEach(row => {
-            const rawAgente = getVal(row, ['agente']);
-            const rawFecha = getVal(row, ['fecha']);
-            
-            if(!rawAgente) return;
-            const name = cleanName(rawAgente);
-            const date = normalizeDate(rawFecha);
-            const key = `${name}|${date}`;
-
-            if(!groups[key]) groups[key] = { agent: name, date: date, regs: [] };
-            
-            groups[key].regs.push({
-                estado: String(getVal(row, ['estado'])||"").toLowerCase(),
-                inicio: getVal(row, ['hora inicio', 'inicio']),
-                tiempo: getVal(row, ['tiempo', 'duracion'])
-            });
+        detailRows.forEach(row => { 
+            const a=getVal(row, ['agente']), f=getVal(row, ['fecha']); 
+            if(!a) return; 
+            const name=cleanName(a), date=normalizeDate(f), key=`${name}|${date}`; 
+            UNIQUE_AGENTS.add(name); 
+            if(!groups[key]) groups[key]={agent:name, date:date, regs:[]}; 
+            groups[key].regs.push({ estado:String(getVal(row,['estado'])||"").toLowerCase(), inicio:getVal(row,['inicio']), tiempo:getVal(row,['tiempo']) }); 
         });
 
-        const services = new Set();
-        let minTime = Infinity, maxTime = -Infinity;
+        let minTime=Infinity, maxTime=-Infinity;
 
         GLOBAL_DATA = Object.values(groups).map(g => {
-            const stats = {
-                agente: g.agent, fecha: g.date,
-                service: detectService(g.agent),
-                t_hablado: 0, t_acw: 0, t_almuerzo: 0, t_break: 0, t_bano: 0, c_calls: 0,
-                c_short_calls: 0,
-                t_conectado_real: 0, t_contratado: 0, t_almuerzo_aprox: 0
+            let sup = getManualSup(g.agent);
+            if(!sup) sup = supervisorMap[g.agent] || "Sin Asignar";
+
+            const stats = { 
+                agente:g.agent, fecha:g.date, service:"General", supervisor: sup,
+                t_hablado_tel:0, t_hablado_digital:0, t_acw:0, t_almuerzo:0, t_break:0, t_bano:0, t_idle:0, t_cap:0, t_admin:0,
+                c_calls:0, c_short_calls:0, t_conectado_real:0, t_contratado:0,
+                atraso: 0, desconexion: 0, turno_str: "-"
             };
-            
-            const dTime = new Date(g.date).getTime();
-            if(dTime < minTime) minTime = dTime;
-            if(dTime > maxTime) maxTime = dTime;
 
-            services.add(stats.service);
-
-            let loginTime = null;
-            let logoutTime = null;
+            const dTime=new Date(g.date).getTime(); if(dTime<minTime) minTime=dTime; if(dTime>maxTime) maxTime=dTime;
+            let loginTime=null, logoutTime=null;
 
             g.regs.forEach(r => {
-                const s = norm(r.estado);
-                const dur = timeToSec(r.tiempo);
-                const start = timeToSec(r.inicio);
+                const s=norm(r.estado), dur=timeToSec(r.tiempo), start=timeToSec(r.inicio);
+                if(s.includes('gestion llamada')) { stats.t_hablado_tel+=dur; stats.c_calls++; if(dur<45) stats.c_short_calls++; }
+                else if(s.includes('en linea')) stats.t_acw+=dur;
+                // Capture IDLE/Avail time internally just in case, but metric is Avg ACW
+                else if(s.includes('disponible') || s.includes('espera') || s.includes('listo') || s.includes('waiting') || s.includes('idle') || s.includes('avail') || s.includes('ready')) stats.t_idle+=dur;
+                else if(s.includes('almuerzo')||s.includes('colacion')) stats.t_almuerzo+=dur;
+                else if(s.includes('break')) stats.t_break+=dur;
+                else if(s.includes('bano')) stats.t_bano+=dur;
+                else if(s.includes('capacita') || s.includes('training')) stats.t_cap+=dur;
+                else if(s.includes('admin') || s.includes('back office') || s.includes('reunion')) stats.t_admin+=dur;
 
-                if(s.includes('gestion llamada')) { 
-                    stats.t_hablado += dur; 
-                    stats.c_calls++;
-                    if(dur < THRESHOLD_SHORT_CALL) stats.c_short_calls++;
-                }
-                else if(s.includes('en linea')) stats.t_acw += dur;
-                else if(s.includes('colacion') || s.includes('almuerzo')) stats.t_almuerzo += dur;
-                else if(s.includes('break')) stats.t_break += dur;
-                else if(s.includes('bano')) stats.t_bano += dur;
-
-                if(s === 'conectado') {
-                    if(loginTime === null || start < loginTime) loginTime = start;
-                }
-                if(s.includes('cierre') || s.includes('sesion')) {
-                    if(logoutTime === null || start > logoutTime) logoutTime = start;
-                }
+                if(s==='conectado') if(loginTime===null||start<loginTime) loginTime=start;
+                if(s.includes('cierre')||s.includes('sesion')) if(logoutTime===null||start>logoutTime) logoutTime=start;
             });
 
-            if(loginTime !== null && logoutTime !== null && logoutTime > loginTime) {
-                stats.t_conectado_real = logoutTime - loginTime;
-            } else {
-                stats.t_conectado_real = stats.t_hablado + stats.t_acw + stats.t_break + stats.t_almuerzo + stats.t_bano;
-            }
+            if(loginTime!==null && logoutTime!==null && logoutTime>loginTime) stats.t_conectado_real = logoutTime-loginTime;
+            else stats.t_conectado_real = stats.t_hablado_tel+stats.t_acw+stats.t_break+stats.t_almuerzo+stats.t_bano+stats.t_idle+stats.t_cap+stats.t_admin;
 
-            if(stats.t_almuerzo > 0) {
-                stats.t_almuerzo_aprox = stats.t_almuerzo <= 2700 ? 1800 : 3600;
-            }
-
-            const shift = shiftMap[`${g.agent}|${g.date}`];
-            if(shift && shift.start && shift.end && !String(shift.start).toLowerCase().includes('sin')) {
-                const s = timeToSec(shift.start);
-                const e = timeToSec(shift.end);
-                if(e > s) stats.t_contratado = e - s;
-            }
-
-            let base_contrato = stats.t_contratado - stats.t_almuerzo_aprox;
-            if(base_contrato <= 0 && stats.t_conectado_real > 0) base_contrato = stats.t_conectado_real - stats.t_almuerzo_aprox;
+            const key = `${g.agent}|${g.date}`;
+            if(digitalMap[key]) stats.t_hablado_digital = digitalMap[key];
+            stats.t_hablado = stats.t_hablado_tel + stats.t_hablado_digital;
             
-            stats.prod = (base_contrato > 0) ? (stats.t_hablado / base_contrato)*100 : 0;
-            stats.adh = (base_contrato > 0) ? (stats.t_conectado_real / base_contrato)*100 : 0;
-            const num_occ = stats.t_hablado + stats.t_acw;
-            stats.occ = (stats.t_conectado_real > 0) ? (num_occ / stats.t_conectado_real)*100 : 0;
+            const t_almuerzo_aprox = stats.t_almuerzo>0 ? (stats.t_almuerzo<=2700?1800:3600) : 0;
+            const shift = shiftMap[key];
+            if(shift) {
+                if(shift.start && shift.end && !String(shift.start).includes('sin')) { const s=timeToSec(shift.start), e=timeToSec(shift.end); if(e>s) stats.t_contratado=e-s; }
+                if(shift.ruleStart && shift.ruleEnd) {
+                    stats.turno_str = `${String(shift.ruleStart).substr(0,5)} - ${String(shift.ruleEnd).substr(0,5)}`;
+                    const rs = timeToSec(shift.ruleStart), re = timeToSec(shift.ruleEnd);
+                    if(loginTime !== null && loginTime > rs) stats.atraso = loginTime - rs;
+                    if(logoutTime !== null && logoutTime < re) stats.desconexion = re - logoutTime;
+                } else if (shift.start && shift.end) { stats.turno_str = `${String(shift.start).substr(0,5)} - ${String(shift.end).substr(0,5)}`; }
+            }
 
-            stats.tmo = stats.c_calls > 0 ? stats.t_hablado / stats.c_calls : 0;
-            stats.idle = stats.c_calls > 0 ? stats.t_acw / stats.c_calls : 0;
-            stats.short_call_pct = stats.c_calls > 0 ? (stats.c_short_calls / stats.c_calls) * 100 : 0;
-            stats.base_calculo = base_contrato > 0 ? base_contrato : 0;
+            let base = stats.t_contratado - t_almuerzo_aprox;
+            if(base<=0 && stats.t_conectado_real>0) base = stats.t_conectado_real - t_almuerzo_aprox;
 
+            // NEW IDLE DEFINITION (Avg ACW)
+            stats.idle_avg = stats.c_calls > 0 ? stats.t_acw / stats.c_calls : 0;
+
+            stats.prod = base>0 ? (stats.t_hablado/base)*100 : 0;
+            stats.adh = base>0 ? (stats.t_conectado_real/base)*100 : 0;
+            stats.occ = stats.t_conectado_real>0 ? ((stats.t_hablado+stats.t_acw)/stats.t_conectado_real)*100 : 0;
+            stats.tmo = stats.c_calls>0 ? stats.t_hablado_tel/stats.c_calls : 0;
+            
+            stats.short_call_pct = stats.c_calls>0 ? (stats.c_short_calls/stats.c_calls)*100 : 0;
+            stats.base_calculo = base>0?base:0;
+            stats.hasFeedback = FEEDBACK_DATA.some(f => cleanName(f.ejecutivo) === stats.agente && normalizeDate(f.fecha_desviacion) === stats.fecha);
             return stats;
         });
 
-        const sel = document.getElementById('serviceFilter');
-        sel.innerHTML = '<option value="">Todos</option>';
-        [...services].sort().forEach(s => {
-            sel.innerHTML += `<option value="${s}">${s}</option>`;
-        });
-
-        if (minTime !== Infinity) {
-            minDate = new Date(minTime).toISOString().split('T')[0];
-            maxDate = new Date(maxTime).toISOString().split('T')[0];
-            setFullRange();
-        }
-
+        const dl = document.getElementById('agentsList'); dl.innerHTML = '';
+        [...UNIQUE_AGENTS].sort().forEach(a => { const op = document.createElement('option'); op.value = a; dl.appendChild(op); });
+        if(minTime!==Infinity) { minDate=new Date(minTime).toISOString().split('T')[0]; maxDate=new Date(maxTime).toISOString().split('T')[0]; setFullRange(); }
         document.getElementById('dashboard').classList.remove('hidden');
     }
 
-    function setFullRange() {
-        if(minDate) {
-            document.getElementById('dateStart').value = minDate;
-            document.getElementById('dateEnd').value = maxDate;
-            applyFilters();
-        }
+    function setFullRange() { if(minDate) { document.getElementById('dateStart').value=minDate; document.getElementById('dateEnd').value=maxDate; applyFilters(); } }
+    
+    function clearFilters() { 
+        document.getElementById('agentSearch').value=''; 
+        document.getElementById('supervisorFilter').value=''; 
+        SHOW_ONLY_FEEDBACK = false;
+        document.getElementById('btnToggleFeed').classList.remove('btn-active');
+        setFullRange(); 
     }
-
-    function clearFilters() {
-        document.getElementById('agentSearch').value = '';
-        document.getElementById('serviceFilter').value = '';
-        setFullRange();
+    
+    function toggleFeedbackFilter() {
+        SHOW_ONLY_FEEDBACK = !SHOW_ONLY_FEEDBACK;
+        const btn = document.getElementById('btnToggleFeed');
+        if(SHOW_ONLY_FEEDBACK) btn.classList.add('btn-active'); else btn.classList.remove('btn-active');
+        applyFilters();
     }
-
+    
     function setAgentFilter(name) {
         document.getElementById('agentSearch').value = name;
         applyFilters();
     }
+    
+    function filterBySupCard(supName) {
+        document.getElementById('supervisorFilter').value = supName;
+        applyFilters();
+        document.querySelectorAll('.clickable-card').forEach(c => c.classList.remove('selected-sup'));
+        event.currentTarget.classList.add('selected-sup');
+    }
 
-    window.applyFilters = function() {
-        const s = document.getElementById('dateStart').value;
-        const e = document.getElementById('dateEnd').value;
-        const searchInput = document.getElementById('agentSearch').value.toLowerCase();
-        const searchTerms = searchInput.split(',').map(s=>s.trim()).filter(Boolean);
-        const service = document.getElementById('serviceFilter').value.toLowerCase();
-
+    function applyFilters() {
+        const s=document.getElementById('dateStart').value, e=document.getElementById('dateEnd').value, term=document.getElementById('agentSearch').value.toLowerCase(), sup=document.getElementById('supervisorFilter').value.toLowerCase();
+        
         FILTERED_DATA = GLOBAL_DATA.filter(d => {
-            const dateOk = (!s || d.fecha>=s) && (!e || d.fecha<=e);
-            let agentOk = true;
-            if (searchTerms.length > 0) agentOk = searchTerms.some(t=>d.agente.toLowerCase().includes(t));
-            const servOk = !service || d.service.toLowerCase().includes(service);
-            return dateOk && agentOk && servOk;
+            let pass = (!s||d.fecha>=s) && (!e||d.fecha<=e) && (!term||d.agente.toLowerCase().includes(term)) && (!sup||d.supervisor.toLowerCase().includes(sup));
+            if(SHOW_ONLY_FEEDBACK && !d.hasFeedback) pass = false;
+            return pass;
         });
+        
+        VISIBLE_ROWS = 20;
+        updateKPIs(); renderCharts(); renderRankCards(); renderTable(); updateSupervisorCards();
+    }
 
-        updateKPIs();
-        renderCharts();
-        renderRankCards();
-        renderTable();
+    function updateSupervisorCards() {
+        const sups = ['Luis Cataldo', 'Angélica Ferrada', 'Carla Cabrera'];
+        sups.forEach(sName => {
+            const teamData = GLOBAL_DATA.filter(d => d.supervisor.toLowerCase().includes(sName.toLowerCase())); 
+            const sDate = document.getElementById('dateStart').value, eDate = document.getElementById('dateEnd').value;
+            const teamFiltered = teamData.filter(d => (!sDate||d.fecha>=sDate) && (!eDate||d.fecha<=eDate));
+            
+            let h=0, con=0, net=0, feed=0, calls=0, acw=0, h_tel=0;
+            teamFiltered.forEach(d => { h+=d.t_hablado; h_tel+=d.t_hablado_tel; con+=d.t_conectado_real; net+=d.base_calculo; acw+=d.t_acw; calls+=d.c_calls; if(d.hasFeedback) feed++; });
+
+            const prod = net?(h/net)*100:0;
+            const adh = net?(con/net)*100:0;
+            const occ = con?((h+acw)/con)*100:0;
+            const tmo = calls?h_tel/calls:0;
+            const idle = calls?acw/calls:0; // Avg ACW
+
+            const safeId = sName.replace(/ /g,'_');
+            if(document.getElementById(`badge_${safeId}`)) {
+                document.getElementById(`badge_${safeId}`).innerText = teamFiltered.length > 0 ? new Set(teamFiltered.map(d=>d.agente)).size : 0;
+                document.getElementById(`sup_prod_${safeId}`).innerText = prod.toFixed(0)+'%';
+                document.getElementById(`sup_adh_${safeId}`).innerText = adh.toFixed(0)+'%';
+                document.getElementById(`sup_occ_${safeId}`).innerText = occ.toFixed(0)+'%';
+                document.getElementById(`sup_tmo_${safeId}`).innerText = secToTime(tmo, true);
+                document.getElementById(`sup_idle_${safeId}`).innerText = secToTime(idle, true);
+                document.getElementById(`sup_feed_${safeId}`).innerText = feed;
+            }
+        });
     }
 
     function updateKPIs() {
-        let sums = { h:0, acw:0, con_real:0, cont_neto:0, calls:0 };
-        FILTERED_DATA.forEach(d => {
-            sums.h += d.t_hablado; 
-            sums.acw += d.t_acw; 
-            sums.con_real += d.t_conectado_real;
-            sums.calls += d.c_calls;
-            sums.cont_neto += d.base_calculo; 
-        });
-        
-        const prod = sums.cont_neto ? (sums.h/sums.cont_neto)*100 : 0;
-        const adh = sums.cont_neto ? (sums.con_real/sums.cont_neto)*100 : 0;
-        const occ = sums.con_real ? ((sums.h+sums.acw)/sums.con_real)*100 : 0;
-        const tmo = sums.calls ? sums.h/sums.calls : 0;
-
-        document.getElementById('kpiGlobalProd').innerText = prod.toFixed(1)+'%';
-        document.getElementById('kpiGlobalAdh').innerText = adh.toFixed(1)+'%';
-        document.getElementById('kpiGlobalOcc').innerText = occ.toFixed(1)+'%';
-        document.getElementById('kpiGlobalTMO').innerText = secToTime(tmo, true);
-    }
-
-    function createRankCard(containerId, title, metricKey, formatFn, colorClass) {
-        const container = document.getElementById(containerId);
-        
-        const sorted = [...FILTERED_DATA].reduce((acc, curr) => {
-            if(!acc[curr.agente]) {
-                 acc[curr.agente] = { ...curr, count:1, c_short_calls_raw: curr.c_short_calls, c_calls_raw: curr.c_calls };
-            } else {
-                acc[curr.agente].c_short_calls_raw += curr.c_short_calls;
-                acc[curr.agente].c_calls_raw += curr.c_calls;
-                if (['prod','adh','occ','tmo','idle'].includes(metricKey)) {
-                     acc[curr.agente][metricKey] = (acc[curr.agente][metricKey] + curr[metricKey]) / 2;
-                } else if (['t_acw','c_calls'].includes(metricKey)) {
-                     acc[curr.agente][metricKey] += curr[metricKey];
-                }
-            }
-            return acc;
-        }, {});
-        
-        Object.values(sorted).forEach(a => {
-            a.short_call_pct = a.c_calls_raw > 0 ? (a.c_short_calls_raw / a.c_calls_raw) * 100 : 0;
-        });
-        
-        let list = Object.values(sorted).sort((a,b) => (b[metricKey] - a[metricKey]) * cardSortState[metricKey]);
-
-        const headerHtml = `
-            <div class="px-3 py-3 border-b border-slate-100 bg-slate-50 card-header group" onclick="toggleCardSort('${metricKey}')">
-                <h4 class="text-xs font-bold ${colorClass} uppercase flex justify-between relative">
-                    ${title} <span>${cardSortState[metricKey]===1?'▲':'▼'}</span>
-                    <span class="tooltip-text">${KPI_DESCRIPTIONS[metricKey] || 'Indicador calculado'}</span>
-                </h4>
-            </div>
-            <div class="overflow-y-auto scroller flex-grow p-0">
-                <table class="w-full text-xs">
-                    ${list.map((d,i) => `
-                        <tr class="border-b border-slate-50 hover:bg-blue-50 cursor-pointer" onclick="setAgentFilter('${d.agente}')">
-                            <td class="pl-3 py-2 text-slate-400 w-6">${i+1}.</td>
-                            <td class="py-2 truncate max-w-[100px] font-medium clickable-name">${d.agente}</td>
-                            <td class="pr-3 py-2 text-right font-bold ${colorClass}">${formatFn(d[metricKey])}</td>
-                        </tr>
-                    `).join('')}
-                </table>
-            </div>
-        `;
-        container.innerHTML = headerHtml;
-    }
-
-    window.toggleCardSort = (k) => { cardSortState[k]*=-1; renderRankCards(); };
-
-    function renderRankCards() {
-        createRankCard('rankContainerProd', '🏆 Productividad', 'prod', v=>v.toFixed(0)+'%', 'text-blue-700');
-        createRankCard('rankContainerAdh', '🧩 Adherencia', 'adh', v=>v.toFixed(0)+'%', 'text-teal-700');
-        createRankCard('rankContainerOcc', '🔥 Ocupación', 'occ', v=>v.toFixed(0)+'%', 'text-orange-700');
-        createRankCard('rankContainerTMO', '⏱️ TMO', 'tmo', v=>secToTime(v,true), 'text-indigo-700');
-        createRankCard('rankContainerIdle', '💤 IDLE', 'idle', v=>secToTime(v,true), 'text-gray-600');
-        createRankCard('rankContainerACW', '📝 ACW Total', 't_acw', v=>secToTime(v), 'text-purple-700');
-        createRankCard('rankContainerCalls', '📞 Llamadas', 'c_calls', v=>v, 'text-slate-800');
-        createRankCard('rankContainerShort', '🚨 CORTAS <45s %', 'short_call_pct', v=>v.toFixed(1)+'%', 'text-red-700');
+        let h=0, acw=0, con=0, net=0, calls=0, h_tel=0;
+        FILTERED_DATA.forEach(d => { h+=d.t_hablado; h_tel+=d.t_hablado_tel; acw+=d.t_acw; con+=d.t_conectado_real; calls+=d.c_calls; net+=d.base_calculo; });
+        document.getElementById('kpiGlobalProd').innerText = (net?(h/net)*100:0).toFixed(1)+'%';
+        document.getElementById('kpiGlobalAdh').innerText = (net?(con/net)*100:0).toFixed(1)+'%';
+        document.getElementById('kpiGlobalOcc').innerText = (con?((h+acw)/con)*100:0).toFixed(1)+'%';
+        document.getElementById('kpiGlobalTMO').innerText = secToTime(calls?h_tel/calls:0, true);
+        document.getElementById('kpiGlobalIdle').innerText = secToTime(calls?acw/calls:0, true); // Avg ACW
     }
 
     function renderCharts() {
-        const groups = {};
-        FILTERED_DATA.forEach(d => {
-            if(!groups[d.fecha]) groups[d.fecha] = { date:d.fecha, h:0, con:0, acw:0, calls:0 };
-            groups[d.fecha].h += d.t_hablado;
-            groups[d.fecha].con += d.t_conectado_real;
-            groups[d.fecha].acw += d.t_acw;
-            groups[d.fecha].calls += d.c_calls;
+        const dates = [...new Set(FILTERED_DATA.map(d=>d.fecha))].sort();
+        const dataProd=[], dataAdh=[], dataOcc=[], dataIdle=[];
+        dates.forEach(date => {
+            const dayData = FILTERED_DATA.filter(d=>d.fecha===date);
+            let h=0, net=0, con=0, acw=0, calls=0;
+            dayData.forEach(d=>{ h+=d.t_hablado; net+=d.base_calculo; con+=d.t_conectado_real; acw+=d.t_acw; calls+=d.c_calls; });
+            dataProd.push(net?(h/net)*100:0); dataAdh.push(net?(con/net)*100:0); dataOcc.push(con?((h+acw)/con)*100:0); 
+            dataIdle.push(calls?acw/calls:0); // Seconds
         });
-        const labels = Object.keys(groups).sort();
-        const dProd = labels.map(l => groups[l].con ? (groups[l].h/groups[l].con)*100 : 0);
-        const dTMO = labels.map(l => groups[l].calls ? (groups[l].h/groups[l].calls)/60 : 0);
+        if(charts['evolution']) charts['evolution'].destroy();
+        charts['evolution'] = new Chart(document.getElementById('chartEvolution'), { type: 'line', data: { labels: dates, datasets: [ { label: 'Productividad', data: dataProd, borderColor: '#2563eb', tension: 0.3, pointRadius: 2 }, { label: 'Adherencia', data: dataAdh, borderColor: '#0d9488', tension: 0.3, pointRadius: 2 }, { label: 'Ocupación', data: dataOcc, borderColor: '#ea580c', tension: 0.3, pointRadius: 2 }, { label: 'Idle (Avg Seg)', data: dataIdle, borderColor: '#64748b', tension: 0.3, pointRadius: 2 } ] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true } } } });
+    }
 
-        updChart('chartProd', 'Prod %', labels, dProd, '#3b82f6');
-        updChart('chartTMO', 'TMO (Min)', labels, dTMO, '#6366f1');
+    function renderRankCards() {
+        const buildRank = (id, title, key, fmtClass, formatter, sortKey) => {
+            const container = document.getElementById(id);
+            const grouped = {};
+            FILTERED_DATA.forEach(d => { if(!grouped[d.agente]) grouped[d.agente] = { ...d, count:0, sumVal:0 }; grouped[d.agente].count++; if(sortKey === 'tmo') grouped[d.agente].sumVal += d.tmo; else if(sortKey === 'c_calls') grouped[d.agente].sumVal += d.c_calls; else grouped[d.agente].sumVal += d[sortKey]; });
+            let list = Object.values(grouped).map(g => { let val = g.sumVal; if(['prod','adh','occ','idle_avg','tmo','short_call_pct'].includes(sortKey)) val = g.sumVal / g.count; return { name: g.agente, val: val }; });
+            const dir = cardSortState[sortKey] || -1; list.sort((a,b) => (b.val - a.val) * dir);
+            
+            container.innerHTML = `<div class="px-3 py-2 bg-slate-50 border-b flex justify-between items-center cursor-pointer hover:bg-slate-100" onclick="toggleCardSort('${sortKey}')"><span class="font-bold text-[10px] uppercase text-slate-500">${title}</span><i class="fas fa-sort text-slate-300 text-xs"></i></div><div class="scroller overflow-y-auto flex-grow p-1"><table class="w-full text-[10px]">${list.map((x,i) => `<tr class="border-b border-slate-50 hover:bg-slate-50"><td class="p-1.5 truncate max-w-[80px] cursor-pointer hover:text-blue-600 hover:underline hover:font-bold" title="Filtrar por ${x.name}" onclick="setAgentFilter('${x.name}')">${i+1}. ${x.name}</td><td class="p-1.5 text-right font-bold ${fmtClass}">${formatter(x.val)}</td></tr>`).join('')}</table></div><div class="p-1 bg-slate-50 border-t text-[8px] text-center text-slate-400">Clic nombre para filtrar</div>`;
+        };
+        buildRank('rankContainerProd', 'Productividad', 'prod', 'text-blue-600', v=>v.toFixed(0)+'%', 'prod');
+        buildRank('rankContainerAdh', 'Adherencia', 'adh', 'text-teal-600', v=>v.toFixed(0)+'%', 'adh');
+        buildRank('rankContainerOcc', 'Ocupación', 'occ', 'text-orange-600', v=>v.toFixed(0)+'%', 'occ');
+        buildRank('rankContainerTMO', 'TMO', 'tmo', 'text-indigo-600', v=>secToTime(v,true), 'tmo');
+        buildRank('rankContainerIdle', 'Idle (Avg)', 'idle', 'text-gray-600', v=>secToTime(v,true), 'idle_avg');
+        buildRank('rankContainerCalls', 'Llamadas', 'calls', 'text-slate-600', v=>Math.round(v), 'c_calls');
     }
-    
-    function updChart(id, l, ls, d, c) {
-        if(charts[id]) charts[id].destroy();
-        charts[id] = new Chart(document.getElementById(id), { 
-            type:'line', 
-            data:{labels:ls, datasets:[{label:l, data:d, borderColor:c, backgroundColor:c+'20', fill:true, tension:0.3}]},
-            options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}
-        });
-    }
+    window.toggleCardSort = (key) => { cardSortState[key] = (cardSortState[key] || -1) * -1; renderRankCards(); };
 
     function renderTable() {
         const tb = document.getElementById('tableBody'); tb.innerHTML = '';
         document.getElementById('rowCount').innerText = FILTERED_DATA.length + ' reg';
-        FILTERED_DATA.forEach(d => {
+        
+        const rowsToShow = FILTERED_DATA.slice(0, VISIBLE_ROWS);
+        const btnLoad = document.getElementById('btnLoadMore');
+        if(VISIBLE_ROWS < FILTERED_DATA.length) { btnLoad.classList.remove('hidden'); btnLoad.innerText = `Ver más (${FILTERED_DATA.length - VISIBLE_ROWS} restantes)`; } else { btnLoad.classList.add('hidden'); }
+
+        rowsToShow.forEach(d => {
             const tr = document.createElement('tr');
-            tr.className = "hover:bg-blue-50/30 border-b border-slate-100 last:border-0 transition-colors";
+            tr.className = d.hasFeedback ? "feedback-done transition-colors" : "hover:bg-blue-50/30 border-b border-slate-100 transition-colors bg-white";
+            const icon = d.hasFeedback ? '<i class="fas fa-check-circle text-green-600"></i>' : '<i class="far fa-circle text-slate-300 group-hover:text-indigo-500"></i>';
+            const nameColor = d.hasFeedback ? 'text-green-800' : 'text-slate-700';
+
+            let hDisp = secToTime(d.t_hablado), hCls = "text-green-700";
+            if(d.t_hablado_digital>0) { hDisp=`<span title="Tel: ${secToTime(d.t_hablado_tel)} | Wsp: ${secToTime(d.t_hablado_digital)}">📱 ${hDisp}</span>`; hCls="text-emerald-600 font-bold cursor-help"; }
+            const atrasoStr = d.atraso > 0 ? `<span class="text-red-600 font-bold bg-red-100 px-1 rounded">${secToTime(d.atraso)}</span>` : '<span class="text-slate-300">-</span>';
+            const descStr = d.desconexion > 0 ? `<span class="text-red-600 font-bold bg-red-100 px-1 rounded">${secToTime(d.desconexion)}</span>` : '<span class="text-slate-300">-</span>';
+
+            const clsCap = d.t_cap > 60 ? "alert-cell-red" : "";
+            const clsAdm = d.t_admin > 60 ? "alert-cell-red" : "";
+            const clsBano = d.t_bano > 600 ? "alert-cell-red" : "";
+            const clsBrk = d.t_break > 1800 ? "alert-cell-orange" : ""; 
+            const clsAlm = d.t_almuerzo > 3600 ? "alert-cell-orange" : "";
             
-            const lunchDiff = (d.t_almuerzo - d.t_almuerzo_aprox)/60; 
-            let lunchClass = lunchDiff > 5 ? "alert-red rounded px-1" : (lunchDiff > 0 ? "alert-yellow rounded px-1" : "");
-            const breakDiff = (d.t_break/60) - 30;
-            let breakClass = breakDiff > 5 ? "alert-red rounded px-1" : (breakDiff > 0 ? "alert-yellow rounded px-1" : "");
-            const bathDiff = (d.t_bano/60) - 15;
-            let bathClass = bathDiff > 5 ? "alert-red rounded px-1" : (bathDiff > 0 ? "alert-yellow rounded px-1" : "");
-            let shortClass = d.short_call_pct > 20 ? "text-red-600 font-bold" : (d.short_call_pct > 10 ? "text-yellow-600" : "text-slate-500");
+            const clsProd = d.prod < 70 ? "text-red-600 font-bold bg-red-50" : "text-teal-700 bg-teal-50";
+            const clsAdh = (d.adh < 80 || d.adh > 100) ? "text-red-600 font-bold bg-red-50" : "text-teal-700";
+            const clsOcc = (d.occ < 80 || d.occ > 100) ? "text-red-600 font-bold bg-orange-50" : "text-orange-700";
+            
+            // New IDLE ALERT (> 60s)
+            const clsIdle = d.idle_avg > 60 ? "alert-cell-red" : "text-gray-500"; 
 
             tr.innerHTML = `
-                <td class="px-3 py-2 font-mono text-xs whitespace-nowrap">${d.fecha}</td>
-                <td class="px-3 py-2 font-bold text-slate-700 whitespace-nowrap text-xs cursor-pointer hover:text-blue-600" onclick="setAgentFilter('${d.agente}')">${d.agente}</td>
-                <td class="px-3 py-2 text-center text-[10px] text-slate-400 font-mono">${secToTime(d.t_contratado,true)}</td>
-                <td class="px-3 py-2 text-right font-mono font-bold text-slate-700 bg-slate-50">${secToTime(d.t_conectado_real)}</td>
-                <td class="px-3 py-2 text-right font-bold text-slate-800">${d.c_calls}</td>
-                <td class="px-3 py-2 text-right text-indigo-600 font-mono text-xs font-bold">${secToTime(d.tmo, true)}</td>
-                <td class="px-3 py-2 text-right text-green-700 font-mono text-xs">${secToTime(d.t_hablado)}</td>
-                <td class="px-3 py-2 text-right text-purple-600 font-mono text-xs">${secToTime(d.t_acw)}</td>
-                <td class="px-3 py-2 text-right text-gray-500 font-mono text-xs">${secToTime(d.idle, true)}</td>
-                <td class="px-3 py-2 text-right text-xs font-mono ${lunchClass}">${secToTime(d.t_almuerzo)}</td>
-                <td class="px-3 py-2 text-right text-xs font-mono ${breakClass}">${secToTime(d.t_break)}</td>
-                <td class="px-3 py-2 text-right text-xs font-mono ${bathClass}">${secToTime(d.t_bano)}</td>
-                <td class="px-3 py-2 text-center font-bold border-l bg-red-50 ${shortClass}">${d.short_call_pct.toFixed(1)}%</td>
-                <td class="px-3 py-2 text-center font-bold text-teal-700 bg-teal-50">${d.prod.toFixed(0)}%</td>
-                <td class="px-3 py-2 text-center font-bold text-teal-700">${d.adh.toFixed(0)}%</td>
-                <td class="px-3 py-2 text-center font-bold text-orange-700">${(d.occ || 0).toFixed(0)}%</td>
+                <td class="px-2 py-2 font-mono whitespace-nowrap">${d.fecha}</td>
+                <td class="px-2 py-2 font-bold ${nameColor} whitespace-nowrap flex items-center gap-2 group cursor-pointer" onclick="openFeedbackModal('${d.agente}', '${d.fecha}')"><span>${icon}</span><span class="hover:underline truncate max-w-[120px]" title="${d.agente}">${d.agente}</span></td>
+                <td class="px-2 py-2 text-center text-[10px] text-blue-600 bg-blue-50 font-mono border-x border-slate-100">${d.turno_str}</td>
+                <td class="px-2 py-2 text-center text-[10px] font-mono">${atrasoStr}</td>
+                <td class="px-2 py-2 text-center text-[10px] font-mono">${descStr}</td>
+                <td class="px-2 py-2 text-right font-bold text-slate-800">${d.c_calls}</td>
+                <td class="px-2 py-2 text-right text-indigo-600 font-mono font-bold">${secToTime(d.tmo, true)}</td>
+                <td class="px-2 py-2 text-right font-mono ${hCls}">${hDisp}</td>
+                <td class="px-2 py-2 text-right text-purple-600 font-mono">${secToTime(d.t_acw)}</td>
+                <td class="px-2 py-2 text-right font-mono ${clsIdle}" title="Promedio ACW">${secToTime(d.idle_avg, true)}</td>
+                <td class="px-2 py-2 text-right text-[10px] font-mono ${clsCap}">${secToTime(d.t_cap)}</td>
+                <td class="px-2 py-2 text-right text-[10px] font-mono ${clsAdm}">${secToTime(d.t_admin)}</td>
+                <td class="px-2 py-2 text-right text-[10px] font-mono ${clsBano}">${secToTime(d.t_bano)}</td>
+                <td class="px-2 py-2 text-right text-[10px] font-mono ${clsBrk}">${secToTime(d.t_break)}</td>
+                <td class="px-2 py-2 text-right text-[10px] font-mono ${clsAlm}">${secToTime(d.t_almuerzo)}</td>
+                <td class="px-2 py-2 text-center font-bold border-l ${clsProd}">${d.prod.toFixed(0)}%</td>
+                <td class="px-2 py-2 text-center font-bold ${clsAdh}">${d.adh.toFixed(0)}%</td>
+                <td class="px-2 py-2 text-center font-bold ${clsOcc}">${(d.occ||0).toFixed(0)}%</td>
             `;
             tb.appendChild(tr);
         });
     }
 
-    function getProdColor(v) {
-        if(v >= 100) return "text-green-600";
-        if(v >= 75) return "text-green-600";
-        if(v >= 50) return "text-yellow-600";
-        return "text-red-600";
-    }
-
-    let sD = 1;
-    window.sort = (key) => {
-        FILTERED_DATA.sort((a,b) => { 
-            let vA=a[key], vB=b[key]; 
-            if(typeof vA==='string'){vA=vA.toLowerCase();vB=vB.toLowerCase();} 
-            return (vA<vB?-1:1)*sD; 
-        });
-        sD*=-1; renderTable();
-    }
+    function loadMoreRows() { VISIBLE_ROWS += 20; renderTable(); }
+    let sD = 1; window.sort = (key) => { FILTERED_DATA.sort((a,b) => { let vA=a[key], vB=b[key]; if(typeof vA==='string'){vA=vA.toLowerCase();vB=vB.toLowerCase();} return (vA<vB?-1:1)*sD; }); sD*=-1; renderTable(); }
+    window.exportTableOnly = () => { const b=new Blob([XLSX.utils.sheet_to_csv(XLSX.utils.json_to_sheet(FILTERED_DATA))],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download="reporte_detallado.csv"; a.click(); }
     
-    window.exportTableOnly = () => {
-        const csv = XLSX.utils.sheet_to_csv(XLSX.utils.json_to_sheet(FILTERED_DATA));
-        const b = new Blob([csv], {type:'text/csv'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download="tabla.csv"; a.click();
+    function openDigitalPanel() {
+        if(UNIQUE_AGENTS.size === 0) return Swal.fire("Atención", "Carga datos primero.", "warning");
+        const sel = document.getElementById('digAgente'); sel.innerHTML = '<option value="">-- Seleccionar --</option>';
+        [...UNIQUE_AGENTS].sort().forEach(a => { let opt=document.createElement('option'); opt.value=a; opt.text=a; sel.appendChild(opt); });
+        document.getElementById('digFecha').value = new Date().toISOString().split('T')[0];
+        document.getElementById('digitalPanel').classList.remove('hidden');
     }
+    document.getElementById('formDigital').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const url = localStorage.getItem('cc_dashboard_api_url');
+        const btn = document.getElementById('btnSaveDigital'); btn.innerHTML = 'Guardando...'; btn.disabled = true;
+        fetch(url, { method: 'POST', body: JSON.stringify({ type: "save_digital", fecha: document.getElementById('digFecha').value, agente: document.getElementById('digAgente').value, horas: document.getElementById('digHoras').value }) })
+        .then(r => r.json()).then(res => { if(res.result === "success") Swal.fire("Éxito", "Guardado.", "success").then(()=>location.reload()); })
+        .catch(e => Swal.fire("Error", e.message, "error")).finally(() => { btn.innerHTML = 'Guardar'; btn.disabled = false; });
+    });
 </script>
 </body>
 </html>
