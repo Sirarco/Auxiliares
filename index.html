@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Contact Center (HLF-ESPEX)</title>
+    <title>Dashboard Contact Center (HLF-ESPEX V60)</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -120,11 +120,11 @@
     <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30">
         <div class="max-w-[1920px] mx-auto px-4 py-2 flex flex-col sm:flex-row justify-between items-center gap-2">
             <h1 class="text-sm font-bold text-slate-700 flex items-center gap-2">
-                <span class="bg-indigo-600 text-white px-2 py-0.5 rounded text-[10px] tracking-wider font-mono">HLF-ESPEX</span>
+                <span class="bg-indigo-600 text-white px-2 py-0.5 rounded text-[10px] tracking-wider font-mono">HLF-ESPEX V60</span>
                 Analítica & Supervisión
             </h1>
             <div class="flex gap-2 items-center flex-wrap justify-center">
-                <button onclick="document.getElementById('auxFileInput').click()" class="text-[10px] font-bold text-white bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded shadow-sm transition-colors flex items-center gap-1" title="Cargar Reporte Auxiliar (Cruzar Datos)">
+                <button onclick="document.getElementById('auxFileInput').click()" class="text-[10px] font-bold text-white bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded shadow-sm transition-colors flex items-center gap-1" title="Carga Manual de Auxiliar">
                     <i class="fas fa-file-upload"></i> Data Auxiliar
                 </button>
                 <input type="file" id="auxFileInput" class="hidden" accept=".xlsx, .xls, .csv" onchange="window.handleAuxUpload(event)">
@@ -159,7 +159,7 @@
         
         <div id="offlineZone" class="hidden mb-6 p-6 bg-white rounded-xl shadow-sm border border-slate-200 animate-fade-in">
             <h2 class="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-wifi-slash text-slate-400"></i> Carga Manual de Reportes (Modo Offline)</h2>
-            <p class="text-xs text-slate-500 mb-6">Para procesar los datos, por favor carga ambos archivos. El sistema los cruzará automáticamente.</p>
+            <p class="text-xs text-slate-500 mb-6">Para procesar los datos, por favor carga ambos archivos para cruzar la información.</p>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <label class="flex flex-col items-center justify-center border-2 border-dashed border-blue-300 bg-blue-50/50 rounded-xl p-8 cursor-pointer hover:bg-blue-50 transition-colors shadow-sm group relative">
                     <i class="fas fa-file-excel text-blue-400 text-3xl mb-3 group-hover:scale-110 transition-transform"></i>
@@ -367,6 +367,8 @@
     let minDate = '', maxDate = '';
     let isOfflineMode = false, isConnected = false, fetchController = null;
     let baseLoaded = false, auxLoaded = false;
+    let mediaRecorder, audioChunks = [], recordSeconds = 0, recordInterval;
+    let currentFeedbackRow = null;
     
     // Aux Table State
     let auxVisCols = { 'col-fecha':true, 'col-hora':true, 'col-agente':true, 'col-total':true, 'col-atend':true, 'col-noatend':true, 'col-tmo':true, 'col-hablado':true, 'col-contact':true, 'col-pacw':true };
@@ -405,7 +407,7 @@
         if(fetchController) fetchController.abort(); fetchController = new AbortController();
         let timeoutId = setTimeout(() => {
             if (!isConnected && !isOfflineMode) {
-                Swal.fire({ title: 'Tiempo agotado', text: 'Esto puede demorar.Puedes seguir esperando o ir al modo manual.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Trabajar Manual', cancelButtonText: 'Seguir Esperando', confirmButtonColor: '#f59e0b', allowOutsideClick: false }).then((result) => { if(result.isConfirmed) { if(fetchController) fetchController.abort(); window.enableOfflineMode(); } });
+                Swal.fire({ title: 'Tiempo agotado', text: 'El servidor de Google tarda mucho en responder. Puedes seguir esperando o ir al modo manual.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Trabajar Manual', cancelButtonText: 'Seguir Esperando', confirmButtonColor: '#f59e0b', allowOutsideClick: false }).then((result) => { if(result.isConfirmed) { if(fetchController) fetchController.abort(); window.enableOfflineMode(); } });
             }
         }, 5000);
 
@@ -414,27 +416,59 @@
             isConnected = true; clearTimeout(timeoutId);
             const toObj = (rows) => { if(!rows||rows.length<2)return[]; const h=rows[0].map(x=>String(x).trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ /g,'_')); return rows.slice(1).map(r=>{ let o={}; h.forEach((k,i)=>{ o[k]=r[i]!==undefined?r[i]:""; }); return o; }); };
             FEEDBACK_DATA = toObj(d.feedback || d.registro_feedback || d.Registro_Feedback || d.Feedback || []);
-            const det = d.detalle || d.Reporte_Detallado || []; const st = d.states || d.estados || []; const dig = d.digital || [];
-            window.processJSON(det, st, dig);
+            const det = d.detalle || d.Reporte_Detallado || []; const st = d.estados || d.states || []; const dig = d.digital || []; const aux = d.auxiliar || [];
+            window.processJSON(det, st, dig, aux);
             if(si) { si.innerHTML = '<span class="text-green-500">●</span> En Línea'; si.className = "text-[10px] font-bold text-green-600 border border-green-200 bg-green-50 px-2 py-1 rounded flex items-center gap-1 cursor-pointer hover:bg-slate-200 transition-colors shadow-sm"; }
             if(!isOfflineMode) { 
                 document.getElementById('offlineZone')?.classList.add('hidden'); document.getElementById('tabNavigation')?.classList.remove('hidden'); document.getElementById('tabMainContent')?.classList.remove('hidden'); 
-                Swal.fire({ title: 'Conectado a Google', text: 'Recuerda cargar el Excel Auxiliar (Botón morado) para calcular la Contactabilidad, Productividad y P-ACW exactos.', icon: 'info', confirmButtonColor: '#3b82f6' }); 
             }
         } catch(e) { if (e.name === 'AbortError') return; isConnected = true; clearTimeout(timeoutId); if(si) { si.innerHTML = '<span class="text-red-500">●</span> Error'; si.className = "text-[10px] font-bold text-red-600 border border-red-200 bg-red-50 px-2 py-1 rounded flex items-center gap-1 cursor-pointer shadow-sm"; } const eb = document.getElementById('errorBox'); if(eb) eb.classList.remove('hidden'); const ed = document.getElementById('errorDetail'); if(ed) ed.innerText=e.message; }
     }
 
     // --- 3. EXCEL PARSERS ---
-    window.processJSON = function(rowsDetail, rowsStates, rowsDigital) {
+    window.processJSON = function(rowsDetail, rowsStates, rowsDigital, rowsAux) {
         const toObj = (rows) => { if(!rows || rows.length < 2) return []; const headers = rows[0].map(h => String(h).trim()); return rows.slice(1).map(row => { let obj = {}; headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? row[i] : ""; }); return obj; }); };
         RAW_DATA_CACHE.detail = toObj(rowsDetail); RAW_DATA_CACHE.states = toObj(rowsStates); RAW_DATA_CACHE.digital = toObj(rowsDigital);
+        
+        // Parse Auxiliar from API matrix if available
+        if (rowsAux && rowsAux.length >= 2) {
+            let hIdx = rowsAux.findIndex(row => row && row.some(c => String(c).toLowerCase().includes('agente')) && row.some(c => String(c).toLowerCase().includes('fecha')));
+            if(hIdx === -1) hIdx = 0;
+            const headers = rowsAux[hIdx].map(h => String(h).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''));
+
+            let iAg = headers.findIndex(h => h === 'agente'); 
+            let iFe = headers.findIndex(h => h.includes('fecha'));
+            let iEs = headers.findIndex(h => h === 'estado' || h.includes('estado_de'));
+            let iSe = headers.findIndex(h => h.includes('sentido'));
+            let iTe = headers.findIndex(h => h.includes('espera'));
+            let iTl = headers.findIndex(h => h.includes('llamada') && h.includes('tiempo'));
+            let iOb = headers.findIndex(h => h === 'observacion'); // Strict
+            if(iOb === -1) iOb = 20; // Fallback U
+            let iTel = headers.findIndex(h => h.includes('telefono') || h.includes('tel'));
+
+            let parsed = [];
+            for(let i=hIdx+1; i<rowsAux.length; i++) {
+                let row = rowsAux[i]; if(!row || row.length === 0) continue;
+                parsed.push({
+                    agente: iAg >= 0 ? (row[iAg] ?? "") : "",
+                    fecha: iFe >= 0 ? (row[iFe] ?? "") : "",
+                    estado: iEs >= 0 ? (row[iEs] ?? "") : "",
+                    sentido: iSe >= 0 ? (row[iSe] ?? "") : "",
+                    tiempo_de_espera: iTe >= 0 ? (row[iTe] ?? "") : "",
+                    tiempo_de_llamada: iTl >= 0 ? (row[iTl] ?? "") : "",
+                    observacion: iOb >= 0 ? (row[iOb] ?? "") : "",
+                    telefono: iTel >= 0 ? (row[iTel] ?? "") : ""
+                });
+            }
+            RAW_DATA_CACHE.aux = parsed;
+            auxLoaded = true;
+        }
+
         window.analyzeData(RAW_DATA_CACHE.detail, RAW_DATA_CACHE.states, RAW_DATA_CACHE.digital, true);
     }
 
     window.checkManualReady = function() {
-        if(baseLoaded && auxLoaded) {
-            document.getElementById('btnProcessManualZone')?.classList.remove('hidden');
-        }
+        if(baseLoaded && auxLoaded) document.getElementById('btnProcessManualZone')?.classList.remove('hidden');
     }
 
     window.processManualData = function() {
@@ -790,7 +824,22 @@
     window.toggleRowHighlight = function(id) { if(highlightedRowId === id) { document.getElementById(id)?.classList.remove('highlight-row'); highlightedRowId = null; } else { if(highlightedRowId) document.getElementById(highlightedRowId)?.classList.remove('highlight-row'); document.getElementById(id)?.classList.add('highlight-row'); highlightedRowId = id; } }
     window.toggleCardSort = function(k) { cardSortState[k] *= -1; window.renderRankCards(); }
     window.sort = function(key) { if(sortCol === key) sortAsc *= -1; else { sortCol = key; sortAsc = 1; } FILTERED_DATA.sort((a,b) => { let vA=key==='_totales'?a.c_calls+(a.c_no_atendidas||0):a[key], vB=key==='_totales'?b.c_calls+(b.c_no_atendidas||0):b[key]; if(typeof vA==='string'){vA=vA.toLowerCase();vB=vB.toLowerCase();} if(vA < vB) return -1 * sortAsc; if(vA > vB) return 1 * sortAsc; return 0; }); window.renderTable(); }
-    window.switchTab = function(t) { document.getElementById('tabMainContent')?.classList.toggle('hidden', t!=='main'); document.getElementById('tabAuxContent')?.classList.toggle('hidden', t!=='aux'); document.getElementById('tabBtnMain')?.classList.toggle('border-blue-600', t==='main'); document.getElementById('tabBtnMain')?.classList.toggle('text-blue-600', t==='main'); document.getElementById('tabBtnAux')?.classList.toggle('border-purple-600', t==='aux'); document.getElementById('tabBtnAux')?.classList.toggle('text-purple-600', t==='aux'); if(t==='aux') window.renderAuxDashboard(); }
+    
+    window.switchTab = function(t) { 
+        const mC = document.getElementById('tabMainContent'), aC = document.getElementById('tabAuxContent');
+        const mB = document.getElementById('tabBtnMain'), aB = document.getElementById('tabBtnAux');
+        if(t === 'main') {
+            mC?.classList.remove('hidden'); aC?.classList.add('hidden');
+            mB?.classList.add('border-blue-600', 'text-blue-600'); mB?.classList.remove('border-transparent', 'text-slate-500');
+            aB?.classList.remove('border-purple-600', 'text-purple-600'); aB?.classList.add('border-transparent', 'text-slate-500');
+        } else {
+            mC?.classList.add('hidden'); aC?.classList.remove('hidden');
+            aB?.classList.add('border-purple-600', 'text-purple-600'); aB?.classList.remove('border-transparent', 'text-slate-500');
+            mB?.classList.remove('border-blue-600', 'text-blue-600'); mB?.classList.add('border-transparent', 'text-slate-500');
+            window.renderAuxDashboard();
+        }
+    }
+    
     window.loadMoreRows = function() { VISIBLE_ROWS += 20; window.renderTable(); }
 
     window.exportTableOnly = () => { const b=new Blob([XLSX.utils.sheet_to_csv(XLSX.utils.json_to_sheet(FILTERED_DATA))],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download="reporte_detallado.csv"; a.click(); }
@@ -803,7 +852,7 @@
             grouped[d.agente].h += d.t_hablado; grouped[d.agente].net += d.base_calculo; grouped[d.agente].con += d.t_conectado_real; grouped[d.agente].con_plan += d.t_contratado_base; grouped[d.agente].acw += d.t_acw; grouped[d.agente].calls += d.c_calls; grouped[d.agente].no_atend += (d.c_no_atendidas || 0); grouped[d.agente].h_tel += d.t_hablado_tel; grouped[d.agente].obs += d.obs_vacias;
         });
         const exportData = Object.values(grouped).map(g => {
-            const prod = g.net ? (g.h / g.net) : 0; const adh = g.con_plan ? (g.con / g.con_plan) : (g.con > 0 ? 1 : 0); const occ = g.con ? ((g.h + g.acw) / g.con) : 0; const tmo = g.calls ? (g.h_tel / g.calls) : 0; const idle = (g.calls+g.no_atend) ? (g.acw / (g.calls+g.no_atend)) : 0; const contact = (g.calls + g.no_atend) > 0 ? (g.calls / (g.calls + g.no_atend)) * 100 : 0;
+            const prod = g.con ? (g.h / g.con) : 0; const adh = g.con_plan ? (g.con / g.con_plan) : (g.con > 0 ? 1 : 0); const occ = g.con ? ((g.h + g.acw) / g.con) : 0; const tmo = g.calls ? (g.h_tel / g.calls) : 0; const idle = (g.calls+g.no_atend) ? (g.acw / (g.calls+g.no_atend)) : 0; const contact = (g.calls + g.no_atend) > 0 ? (g.calls / (g.calls + g.no_atend)) * 100 : 0;
             return { "ID": getAgentId(g.name), "Nombre": g.name, "Supervisor": g.sup, "Productividad": (Number(prod * 100)||0).toFixed(1) + "%", "Adherencia": (Number(adh * 100)||0).toFixed(1) + "%", "Ocupación": (Number(occ * 100)||0).toFixed(1) + "%", "TMO": secToTime(tmo, true), "P-ACW": secToTime(idle, true), "Atendidas": g.calls, "No Atendidas": g.no_atend, "Contactabilidad": (Number(contact)||0).toFixed(1) + "%", "Obs. Vacías": g.obs };
         });
         const ws = XLSX.utils.json_to_sheet(exportData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Resumen_Ejecutivos"); XLSX.writeFile(wb, "Resumen_Ejecutivos.xlsx");
@@ -824,7 +873,7 @@
     }
 
     window.renderAuxDashboard = function() {
-        if(!RAW_DATA_CACHE.aux.length) return;
+        if(!RAW_DATA_CACHE.aux || !RAW_DATA_CACHE.aux.length) return;
         const dF = document.getElementById('auxDate')?.value || '', tS = document.getElementById('auxTimeStart')?.value || '', tE = document.getElementById('auxTimeEnd')?.value || '', agent = (document.getElementById('auxAgentSearch')?.value || '').toLowerCase(), sent = (document.getElementById('auxSentido')?.value || '').toLowerCase(), intvF = document.getElementById('auxInterval')?.value || '';
         let filtered = RAW_DATA_CACHE.aux.filter(r => { const dt=extractDateAndTime(r.fecha), aN=mapAuxAgent(r.agente).toLowerCase(), s=String(r.sentido||'').toLowerCase(); r._d=dt.date; r._t=dt.time; r._a=mapAuxAgent(r.agente); return (!dF||dt.date===dF) && (!tS||dt.time>=tS) && (!tE||dt.time<=tE) && (!agent||aN.includes(agent)) && (!sent||s.includes(sent)); });
         
@@ -959,16 +1008,35 @@
         audioChunks = []; recordSeconds = 0;
         const deviceId = document.getElementById('micSelector').value;
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: deviceId ? { exact: deviceId } : true }); mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); }; mediaRecorder.onstop = window.processAudioData; mediaRecorder.start();
-            document.getElementById('btnRecord').classList.add('hidden'); document.getElementById('btnStopRecord').classList.remove('hidden'); document.getElementById('recordTimer').classList.add('text-red-600', 'animate-pulse');
-            recordInterval = setInterval(() => { recordSeconds++; const m = Math.floor(recordSeconds / 60).toString().padStart(2, '0'), s = (recordSeconds % 60).toString().padStart(2, '0'); document.getElementById('recordTimer').innerText = `${m}:${s}`; }, 1000);
-        } catch(e) { Swal.fire("Error", "No se pudo iniciar micrófono.", "error"); document.getElementById('btnRecord').disabled = false; }
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: deviceId ? { exact: deviceId } : true }); 
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); }; 
+            mediaRecorder.onstop = window.processAudioData; 
+            mediaRecorder.start();
+            
+            document.getElementById('btnRecord').classList.add('hidden'); 
+            document.getElementById('btnStopRecord').classList.remove('hidden'); 
+            document.getElementById('recordTimer').classList.add('text-red-600', 'animate-pulse');
+            
+            recordInterval = setInterval(() => { 
+                recordSeconds++; 
+                const m = Math.floor(recordSeconds / 60).toString().padStart(2, '0');
+                const s = (recordSeconds % 60).toString().padStart(2, '0'); 
+                document.getElementById('recordTimer').innerText = `${m}:${s}`; 
+            }, 1000);
+        } catch(e) { Swal.fire("Error", "No se pudo iniciar el micrófono.", "error"); document.getElementById('btnRecord').disabled = false; }
     }
 
     window.stopRecording = function() {
-        if(mediaRecorder && mediaRecorder.state !== 'inactive') { mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t => t.stop()); }
-        clearInterval(recordInterval); document.getElementById('btnStopRecord').classList.add('hidden'); document.getElementById('btnRecord').classList.remove('hidden'); document.getElementById('btnRecord').disabled = false; document.getElementById('recordTimer').classList.remove('text-red-600', 'animate-pulse');
+        if(typeof mediaRecorder !== 'undefined' && mediaRecorder && mediaRecorder.state !== 'inactive') { 
+            mediaRecorder.stop(); 
+            mediaRecorder.stream.getTracks().forEach(t => t.stop()); 
+        }
+        clearInterval(recordInterval); 
+        document.getElementById('btnStopRecord').classList.add('hidden'); 
+        document.getElementById('btnRecord').classList.remove('hidden'); 
+        document.getElementById('btnRecord').disabled = false; 
+        document.getElementById('recordTimer').classList.remove('text-red-600', 'animate-pulse');
     }
 
     window.processAudioData = function() {
@@ -977,7 +1045,11 @@
         const btnDownload = document.getElementById('btnDownloadAudio'); btnDownload.href = audioUrl;
         const now = new Date(); const dStr = now.getFullYear().toString() + pad(now.getMonth()+1) + pad(now.getDate()); const tStr = pad(now.getHours()) + pad(now.getMinutes());
         const exec = (document.getElementById('fbEjecutivo').value || 'Ejecutivo').trim().replace(/\s+/g, '_'); const sup = (document.getElementById('fbEvaluador').value || 'Supervisor').trim().replace(/\s+/g, '_');
-        btnDownload.download = `${dStr}_${tStr}_${exec}_${sup}.webm`; btnDownload.classList.remove('hidden'); btnDownload.classList.add('flex');
+        btnDownload.download = `${dStr}_${tStr}_${exec}_${sup}.webm`; 
+        btnDownload.classList.remove('hidden'); btnDownload.classList.add('flex');
+        
+        // AUTO DOWNLOAD TRIGGER
+        setTimeout(() => { btnDownload.click(); }, 300);
     }
 
     window.openFeedbackModal = function(agente, fecha) {
@@ -993,7 +1065,14 @@
 
         if (currentFeedbackRow) {
             banner.classList.remove('hidden', 'bg-blue-100', 'text-blue-800'); banner.classList.add('bg-green-100', 'text-green-800'); banner.innerHTML = '<i class="fas fa-check-circle"></i> Feedback Realizado';
-            document.getElementById('fbEvaluador').value = currentFeedbackRow.evaluador; document.getElementById('fbFechaFeed').value = normalizeDate(currentFeedbackRow.fecha_feedback); document.getElementById('fbHoraFeed').value = currentFeedbackRow.hora_feedback; document.getElementById('fbAudio').value = currentFeedbackRow.grabacion_audio; document.getElementById('fbIndicador').value = currentFeedbackRow.indicador; document.getElementById('fbDetalle').value = currentFeedbackRow.detalle_quiebre; document.getElementById('fbObservacion').value = currentFeedbackRow.obv_ejecutivo; document.getElementById('fbCompromiso').value = currentFeedbackRow.compromiso;
+            document.getElementById('fbEvaluador').value = currentFeedbackRow.evaluador || ''; 
+            document.getElementById('fbFechaFeed').value = normalizeDate(currentFeedbackRow.fecha_feedback || ''); 
+            document.getElementById('fbHoraFeed').value = currentFeedbackRow.hora_feedback || ''; 
+            document.getElementById('fbAudio').value = currentFeedbackRow.grabacion_audio || ''; 
+            document.getElementById('fbIndicador').value = currentFeedbackRow.indicador || ''; 
+            document.getElementById('fbDetalle').value = currentFeedbackRow.detalle_quiebre || ''; 
+            document.getElementById('fbObservacion').value = currentFeedbackRow.obv_ejecutivo || ''; 
+            document.getElementById('fbCompromiso').value = currentFeedbackRow.compromiso || '';
             const inputs = document.querySelectorAll('#formFeedback input:not([readonly]), #formFeedback select, #formFeedback textarea'); inputs.forEach(i => i.disabled = true);
             btnSave.classList.add('hidden'); btnPdf.classList.remove('hidden'); document.getElementById('audioRecorderModule')?.classList.add('hidden');
         } else {
@@ -1005,20 +1084,116 @@
     }
     
     window.closeFeedback = function() { 
-        if(mediaRecorder && mediaRecorder.state !== 'inactive') window.stopRecording();
-        document.getElementById('recordTimer').innerText = '00:00'; document.getElementById('audioPlayback').classList.add('hidden');
-        document.getElementById('btnDownloadAudio').classList.add('hidden'); document.getElementById('btnDownloadAudio').classList.remove('flex');
-        document.getElementById('btnRecord').classList.remove('hidden'); document.getElementById('btnStopRecord').classList.add('hidden'); document.getElementById('btnRecord').disabled = false;
+        try {
+            if(typeof mediaRecorder !== 'undefined' && mediaRecorder && mediaRecorder.state !== 'inactive') {
+                window.stopRecording();
+            }
+        } catch(e) {}
+        document.getElementById('recordTimer').innerText = '00:00'; 
+        document.getElementById('audioPlayback').classList.add('hidden');
+        document.getElementById('btnDownloadAudio').classList.add('hidden'); 
+        document.getElementById('btnDownloadAudio').classList.remove('flex');
+        document.getElementById('btnRecord').classList.remove('hidden'); 
+        document.getElementById('btnStopRecord').classList.add('hidden'); 
+        document.getElementById('btnRecord').disabled = false;
         document.getElementById('feedbackPanel').classList.add('hidden'); 
     }
     
     window.generatePDF = function() {
-        if(!currentFeedbackRow) return; const doc = new jsPDF(); doc.setFillColor(79, 70, 229); doc.rect(0, 0, 210, 25, 'F'); doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.text("Registro de Feedback y Compromiso", 105, 15, null, null, "center"); doc.setTextColor(0, 0, 0); doc.setFontSize(10);
-        let y = 40; const addField = (lbl, val) => { doc.setFont("helvetica", "bold"); doc.text(lbl, 20, y); doc.setFont("helvetica", "normal"); doc.text(String(val), 80, y, {maxWidth: 110}); y += 10; };
-        addField("Ejecutivo:", currentFeedbackRow.ejecutivo); addField("Evaluador:", currentFeedbackRow.evaluador); addField("Fecha Desviación:", normalizeDate(currentFeedbackRow.fecha_desviacion)); addField("Fecha Feedback:", normalizeDate(currentFeedbackRow.fecha_feedback) + " " + currentFeedbackRow.hora_feedback); addField("Indicador Afectado:", currentFeedbackRow.indicador);
-        y+=5; doc.setFont("helvetica", "bold"); doc.text("Detalle del Quiebre:", 20, y); y+=7; doc.setFont("helvetica", "normal"); const splitDetalle = doc.splitTextToSize(currentFeedbackRow.detalle_quiebre, 170); doc.text(splitDetalle, 20, y); y += (splitDetalle.length * 7) + 10;
-        doc.setFont("helvetica", "bold"); doc.text("Compromiso / Acuerdo:", 20, y); y+=7; doc.setFont("helvetica", "normal"); const splitComp = doc.splitTextToSize(currentFeedbackRow.compromiso, 170); doc.text(splitComp, 20, y);
-        y = 250; doc.setLineWidth(0.5); doc.line(30, y, 90, y); doc.line(120, y, 180, y); doc.setFontSize(8); doc.text(currentFeedbackRow.evaluador, 60, y+5, null, null, "center"); doc.text("Firma Evaluador", 60, y+10, null, null, "center"); doc.text(currentFeedbackRow.ejecutivo, 150, y+5, null, null, "center"); doc.text("Firma Ejecutivo", 150, y+10, null, null, "center"); doc.save(`Feedback_${cleanName(currentFeedbackRow.ejecutivo)}.pdf`);
+        if(!currentFeedbackRow) return; 
+        const doc = new jsPDF(); 
+        
+        // 1. Cabecera Corporativa
+        doc.setFillColor(79, 70, 229); 
+        doc.rect(0, 0, 210, 30, 'F'); 
+        doc.setTextColor(255, 255, 255); 
+        doc.setFontSize(16); 
+        doc.setFont("helvetica", "bold"); 
+        doc.text("REPORTE DE GESTIÓN Y DESEMPEÑO", 105, 18, null, null, "center"); 
+        
+        // 2. Bloque de Metadatos
+        doc.setFillColor(248, 250, 252); 
+        doc.setDrawColor(226, 232, 240); 
+        doc.roundedRect(15, 40, 180, 40, 3, 3, 'FD');
+        
+        doc.setTextColor(15, 23, 42); 
+        doc.setFontSize(10);
+        
+        doc.setFont("helvetica", "bold"); doc.text("Ejecutivo:", 20, 50); 
+        doc.setFont("helvetica", "normal"); doc.text(String(currentFeedbackRow.ejecutivo || '-'), 45, 50);
+        
+        doc.setFont("helvetica", "bold"); doc.text("Evaluador:", 20, 60); 
+        doc.setFont("helvetica", "normal"); doc.text(String(currentFeedbackRow.evaluador || '-'), 45, 60);
+        
+        doc.setFont("helvetica", "bold"); doc.text("Indicador:", 20, 70); 
+        doc.setFont("helvetica", "normal"); doc.text(String(currentFeedbackRow.indicador || '-'), 45, 70);
+        
+        doc.setFont("helvetica", "bold"); doc.text("Fecha Desv:", 120, 50); 
+        doc.setFont("helvetica", "normal"); doc.text(normalizeDate(currentFeedbackRow.fecha_desviacion || '-'), 145, 50);
+        
+        doc.setFont("helvetica", "bold"); doc.text("Fecha Feed:", 120, 60); 
+        doc.setFont("helvetica", "normal"); doc.text(normalizeDate(currentFeedbackRow.fecha_feedback) + " " + (currentFeedbackRow.hora_feedback || ""), 145, 60);
+        
+        doc.setFont("helvetica", "bold"); doc.text("Audio Grabado:", 120, 70); 
+        doc.setFont("helvetica", "normal"); doc.text(String(currentFeedbackRow.grabacion_audio || "NO"), 148, 70);
+        
+        // 3. Cuerpo del Informe
+        let y = 95;
+        doc.setTextColor(79, 70, 229); 
+        doc.setFont("helvetica", "bold"); 
+        doc.setFontSize(12);
+        doc.text("Detalle del Quiebre", 15, y); 
+        doc.setDrawColor(79, 70, 229); doc.line(15, y+2, 55, y+2);
+        
+        y += 10; 
+        doc.setTextColor(51, 65, 85); 
+        doc.setFont("helvetica", "normal"); 
+        doc.setFontSize(10);
+        const splitDetalle = doc.splitTextToSize(currentFeedbackRow.detalle_quiebre || "Sin detalle registrado.", 180); 
+        doc.text(splitDetalle, 15, y); 
+        y += (splitDetalle.length * 5) + 10;
+        
+        if(currentFeedbackRow.obv_ejecutivo) {
+            doc.setTextColor(79, 70, 229); 
+            doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+            doc.text("Observación del Ejecutivo", 15, y); 
+            doc.line(15, y+2, 70, y+2);
+            y += 10;
+            doc.setTextColor(51, 65, 85); doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+            const splitObs = doc.splitTextToSize(currentFeedbackRow.obv_ejecutivo, 180); 
+            doc.text(splitObs, 15, y); 
+            y += (splitObs.length * 5) + 10;
+        }
+        
+        doc.setTextColor(79, 70, 229); 
+        doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+        doc.text("Compromiso / Acuerdo", 15, y); 
+        doc.line(15, y+2, 63, y+2);
+        
+        y += 10; 
+        doc.setTextColor(51, 65, 85); 
+        doc.setFont("helvetica", "normal"); 
+        doc.setFontSize(10);
+        const splitComp = doc.splitTextToSize(currentFeedbackRow.compromiso || "Sin compromiso registrado.", 180); 
+        doc.text(splitComp, 15, y);
+        
+        // 4. Firmas
+        y = 250; 
+        doc.setDrawColor(203, 213, 225); 
+        doc.setLineWidth(0.5); 
+        doc.line(30, y, 90, y); 
+        doc.line(120, y, 180, y); 
+        
+        doc.setTextColor(15, 23, 42);
+        doc.setFontSize(9); doc.setFont("helvetica", "bold");
+        doc.text(String(currentFeedbackRow.evaluador || "Evaluador"), 60, y+5, null, null, "center"); 
+        doc.text(String(currentFeedbackRow.ejecutivo || "Ejecutivo"), 150, y+5, null, null, "center"); 
+        
+        doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(100, 116, 139);
+        doc.text("Firma Evaluador", 60, y+10, null, null, "center"); 
+        doc.text("Firma Ejecutivo", 150, y+10, null, null, "center"); 
+        
+        doc.save(`Feedback_${cleanName(currentFeedbackRow.ejecutivo || 'Agent')}.pdf`);
     }
 
     document.getElementById('formFeedback')?.addEventListener('submit', function(e) {
