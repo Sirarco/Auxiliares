@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Contact Center (HLF-ESPEX V60)</title>
+    <title>Dashboard Contact Center (HLF-ESPEX)</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -120,7 +120,7 @@
     <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30">
         <div class="max-w-[1920px] mx-auto px-4 py-2 flex flex-col sm:flex-row justify-between items-center gap-2">
             <h1 class="text-sm font-bold text-slate-700 flex items-center gap-2">
-                <span class="bg-indigo-600 text-white px-2 py-0.5 rounded text-[10px] tracking-wider font-mono">HLF-ESPEX V60</span>
+                <span class="bg-indigo-600 text-white px-2 py-0.5 rounded text-[10px] tracking-wider font-mono">HLF-ESPEX</span>
                 Analítica & Supervisión
             </h1>
             <div class="flex gap-2 items-center flex-wrap justify-center">
@@ -176,7 +176,6 @@
                     <input type="file" class="hidden" id="auxFileInputOffline" accept=".xlsx, .xls, .csv" onchange="window.handleAuxUpload(event)">
                 </label>
             </div>
-            
             <div id="btnProcessManualZone" class="mt-8 flex justify-center hidden">
                 <button onclick="window.processManualData()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg text-sm flex items-center gap-2 transition-transform hover:scale-105">
                     <i class="fas fa-play"></i> Procesar Datos y Ver Dashboards
@@ -204,7 +203,7 @@
                 <div class="flex-grow w-full sm:w-auto relative">
                     <label class="text-[10px] font-bold text-slate-500 uppercase">Buscar Ejecutivo</label>
                     <div class="relative">
-                        <input list="agentsList" id="agentSearch" oninput="window.applyFilters()" placeholder="Nombre..." class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-sm outline-none pr-8">
+                        <input list="agentsList" id="agentSearch" oninput="window.debouncedApplyFilters()" placeholder="Nombre..." class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-sm outline-none pr-8">
                         <button onclick="window.clearAgentSearch()" class="absolute right-2 top-1.5 text-slate-400 hover:text-red-500 font-bold" title="Quitar selección">✕</button>
                     </div>
                     <datalist id="agentsList"></datalist>
@@ -293,7 +292,7 @@
                 <div class="flex-grow w-full sm:w-auto relative">
                     <label class="text-[10px] font-bold text-purple-600 uppercase">Filtro Ejecutivo</label>
                     <div class="relative">
-                        <input list="agentsList" id="auxAgentSearch" oninput="window.renderAuxDashboard()" placeholder="Nombre..." class="w-full bg-white border border-purple-200 rounded px-3 py-1.5 text-sm outline-none pr-8">
+                        <input list="agentsList" id="auxAgentSearch" oninput="window.debouncedRenderAux()" placeholder="Nombre..." class="w-full bg-white border border-purple-200 rounded px-3 py-1.5 text-sm outline-none pr-8">
                         <button onclick="document.getElementById('auxAgentSearch').value=''; window.renderAuxDashboard();" class="absolute right-2 top-1.5 text-purple-400 hover:text-purple-600 font-bold">✕</button>
                     </div>
                 </div>
@@ -361,7 +360,7 @@
     const { jsPDF } = window.jspdf;
     let GLOBAL_DATA = [], FILTERED_DATA = [], FEEDBACK_DATA = [], charts = {};
     let UNIQUE_AGENTS = new Set();
-    let cardSortState = { prod:-1, tmo:-1, adh:-1, occ:-1, idle:-1, calls:-1, short:-1, obs:-1, contact:-1 };
+    let cardSortState = { prod:-1, tmo:-1, adh:-1, occ:-1, idle:-1, calls:-1, short:-1, p_enlinea:-1, contact:-1 };
     let VISIBLE_ROWS = 20, SHOW_ONLY_FEEDBACK = false, highlightedRowId = null, SHORT_CALL_THRESHOLD = 45;
     let RAW_DATA_CACHE = { detail: [], states: [], digital: [], aux: [] };
     let minDate = '', maxDate = '';
@@ -370,7 +369,9 @@
     let mediaRecorder, audioChunks = [], recordSeconds = 0, recordInterval;
     let currentFeedbackRow = null;
     
-    // Aux Table State
+    let filterDebounceTimer = null;
+    let auxDebounceTimer = null;
+    
     let auxVisCols = { 'col-fecha':true, 'col-hora':true, 'col-agente':true, 'col-total':true, 'col-atend':true, 'col-noatend':true, 'col-tmo':true, 'col-hablado':true, 'col-contact':true, 'col-pacw':true };
     let auxColOrder = ['col-fecha', 'col-hora', 'col-agente', 'col-total', 'col-atend', 'col-noatend', 'col-tmo', 'col-hablado', 'col-contact', 'col-pacw'];
     let auxDragSrcEl = null;
@@ -384,7 +385,6 @@
         if(savedUrl) window.connectToSheet(savedUrl); else window.showConfig();
     });
 
-    // --- 2. OFFLINE & UI MANAGERS ---
     window.toggleStatusMenu = function() { document.getElementById('statusMenu')?.classList.toggle('hidden'); }
     document.addEventListener('click', e => { const menu = document.getElementById('statusMenu'), ind = document.getElementById('statusIndicator'), cm = document.getElementById('colConfigModal'); if(menu && ind && !menu.contains(e.target) && !ind.contains(e.target)) menu.classList.add('hidden'); if(cm && !cm.contains(e.target) && !e.target.closest('.relative')) cm.classList.add('hidden'); });
 
@@ -407,7 +407,7 @@
         if(fetchController) fetchController.abort(); fetchController = new AbortController();
         let timeoutId = setTimeout(() => {
             if (!isConnected && !isOfflineMode) {
-                Swal.fire({ title: 'Tiempo agotado', text: 'El servidor de Google tarda mucho en responder. Puedes seguir esperando o ir al modo manual.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Trabajar Manual', cancelButtonText: 'Seguir Esperando', confirmButtonColor: '#f59e0b', allowOutsideClick: false }).then((result) => { if(result.isConfirmed) { if(fetchController) fetchController.abort(); window.enableOfflineMode(); } });
+                Swal.fire({ title: 'Tiempo agotado', text: 'El servidor tarda en responder. Puedes seguir esperando o ir al modo manual.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Trabajar Manual', cancelButtonText: 'Seguir Esperando', confirmButtonColor: '#f59e0b', allowOutsideClick: false }).then((result) => { if(result.isConfirmed) { if(fetchController) fetchController.abort(); window.enableOfflineMode(); } });
             }
         }, 5000);
 
@@ -425,12 +425,10 @@
         } catch(e) { if (e.name === 'AbortError') return; isConnected = true; clearTimeout(timeoutId); if(si) { si.innerHTML = '<span class="text-red-500">●</span> Error'; si.className = "text-[10px] font-bold text-red-600 border border-red-200 bg-red-50 px-2 py-1 rounded flex items-center gap-1 cursor-pointer shadow-sm"; } const eb = document.getElementById('errorBox'); if(eb) eb.classList.remove('hidden'); const ed = document.getElementById('errorDetail'); if(ed) ed.innerText=e.message; }
     }
 
-    // --- 3. EXCEL PARSERS ---
     window.processJSON = function(rowsDetail, rowsStates, rowsDigital, rowsAux) {
         const toObj = (rows) => { if(!rows || rows.length < 2) return []; const headers = rows[0].map(h => String(h).trim()); return rows.slice(1).map(row => { let obj = {}; headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? row[i] : ""; }); return obj; }); };
         RAW_DATA_CACHE.detail = toObj(rowsDetail); RAW_DATA_CACHE.states = toObj(rowsStates); RAW_DATA_CACHE.digital = toObj(rowsDigital);
         
-        // Parse Auxiliar from API matrix if available
         if (rowsAux && rowsAux.length >= 2) {
             let hIdx = rowsAux.findIndex(row => row && row.some(c => String(c).toLowerCase().includes('agente')) && row.some(c => String(c).toLowerCase().includes('fecha')));
             if(hIdx === -1) hIdx = 0;
@@ -442,16 +440,26 @@
             let iSe = headers.findIndex(h => h.includes('sentido'));
             let iTe = headers.findIndex(h => h.includes('espera'));
             let iTl = headers.findIndex(h => h.includes('llamada') && h.includes('tiempo'));
-            let iOb = headers.findIndex(h => h === 'observacion'); // Strict
-            if(iOb === -1) iOb = 20; // Fallback U
+            let iOb = headers.findIndex(h => h === 'observacion'); 
+            if(iOb === -1) iOb = 20; 
             let iTel = headers.findIndex(h => h.includes('telefono') || h.includes('tel'));
 
             let parsed = [];
             for(let i=hIdx+1; i<rowsAux.length; i++) {
                 let row = rowsAux[i]; if(!row || row.length === 0) continue;
+                
+                let fe = iFe >= 0 ? (row[iFe] ?? "") : "";
+                let dt = extractDateAndTime(fe);
+                let agRaw = iAg >= 0 ? (row[iAg] ?? "") : "";
+                let mappedAg = mapAuxAgent(agRaw);
+                
                 parsed.push({
-                    agente: iAg >= 0 ? (row[iAg] ?? "") : "",
-                    fecha: iFe >= 0 ? (row[iFe] ?? "") : "",
+                    agente: agRaw,
+                    _a: mappedAg,
+                    _a_low: mappedAg.toLowerCase(),
+                    fecha: fe,
+                    _d: dt.date,
+                    _t: dt.time,
                     estado: iEs >= 0 ? (row[iEs] ?? "") : "",
                     sentido: iSe >= 0 ? (row[iSe] ?? "") : "",
                     tiempo_de_espera: iTe >= 0 ? (row[iTe] ?? "") : "",
@@ -467,14 +475,8 @@
         window.analyzeData(RAW_DATA_CACHE.detail, RAW_DATA_CACHE.states, RAW_DATA_CACHE.digital, true);
     }
 
-    window.checkManualReady = function() {
-        if(baseLoaded && auxLoaded) document.getElementById('btnProcessManualZone')?.classList.remove('hidden');
-    }
-
-    window.processManualData = function() {
-        window.analyzeData(RAW_DATA_CACHE.detail, RAW_DATA_CACHE.states, RAW_DATA_CACHE.digital, true);
-        document.getElementById('offlineZone')?.classList.add('hidden'); document.getElementById('tabNavigation')?.classList.remove('hidden'); window.switchTab('main');
-    }
+    window.checkManualReady = function() { if(baseLoaded && auxLoaded) document.getElementById('btnProcessManualZone')?.classList.remove('hidden'); }
+    window.processManualData = function() { window.analyzeData(RAW_DATA_CACHE.detail, RAW_DATA_CACHE.states, RAW_DATA_CACHE.digital, true); document.getElementById('offlineZone')?.classList.add('hidden'); document.getElementById('tabNavigation')?.classList.remove('hidden'); window.switchTab('main'); }
 
     window.handleBaseUpload = function(e) {
         const file = e.target.files[0]; if(!file) return;
@@ -508,8 +510,6 @@
         const reader = new FileReader(); reader.onload = function(evt) {
             try {
                 const data = new Uint8Array(evt.target.result); const workbook = XLSX.read(data, {type: 'array'});
-                
-                // STRATEGY: MATRIX READ FOR EXACT HEADERS AND EMPTY CELLS
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
                 const matrix = XLSX.utils.sheet_to_json(sheet, {header: 1});
                 if(matrix.length < 2) throw new Error("El archivo auxiliar está vacío.");
@@ -519,14 +519,14 @@
 
                 const headers = matrix[hIdx].map(h => String(h).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''));
                 
-                let iAg = headers.findIndex(h => h === 'agente'); // STRICT MATCH PARA NO CRUZAR CLIENTES
+                let iAg = headers.findIndex(h => h === 'agente'); 
                 let iFe = headers.findIndex(h => h.includes('fecha'));
                 let iEs = headers.findIndex(h => h === 'estado' || h.includes('estado_de'));
                 let iSe = headers.findIndex(h => h.includes('sentido'));
                 let iTe = headers.findIndex(h => h.includes('espera'));
                 let iTl = headers.findIndex(h => h.includes('llamada') && h.includes('tiempo'));
-                let iOb = headers.findIndex(h => h === 'observacion'); // STRICT MATCH OBS
-                if(iOb === -1) iOb = 20; // Fallback Columna U por defecto según PRD
+                let iOb = headers.findIndex(h => h === 'observacion'); 
+                if(iOb === -1) iOb = 20; 
                 let iTel = headers.findIndex(h => h.includes('telefono') || h.includes('tel'));
 
                 if(iAg === -1) throw new Error("No se encontró la columna exacta 'Agente' en el archivo auxiliar.");
@@ -534,15 +534,16 @@
                 let parsed = [];
                 for(let i=hIdx+1; i<matrix.length; i++) {
                     let row = matrix[i]; if(!row || row.length === 0) continue;
+                    let fe = iFe >= 0 ? (row[iFe] ?? "") : "";
+                    let dt = extractDateAndTime(fe);
+                    let agRaw = iAg >= 0 ? (row[iAg] ?? "") : "";
+                    let mappedAg = mapAuxAgent(agRaw);
+
                     parsed.push({
-                        agente: iAg >= 0 ? (row[iAg] ?? "") : "",
-                        fecha: iFe >= 0 ? (row[iFe] ?? "") : "",
-                        estado: iEs >= 0 ? (row[iEs] ?? "") : "",
-                        sentido: iSe >= 0 ? (row[iSe] ?? "") : "",
-                        tiempo_de_espera: iTe >= 0 ? (row[iTe] ?? "") : "",
-                        tiempo_de_llamada: iTl >= 0 ? (row[iTl] ?? "") : "",
-                        observacion: iOb >= 0 ? (row[iOb] ?? "") : "",
-                        telefono: iTel >= 0 ? (row[iTel] ?? "") : ""
+                        agente: agRaw, _a: mappedAg, _a_low: mappedAg.toLowerCase(), fecha: fe, _d: dt.date, _t: dt.time,
+                        estado: iEs >= 0 ? (row[iEs] ?? "") : "", sentido: iSe >= 0 ? (row[iSe] ?? "") : "",
+                        tiempo_de_espera: iTe >= 0 ? (row[iTe] ?? "") : "", tiempo_de_llamada: iTl >= 0 ? (row[iTl] ?? "") : "",
+                        observacion: iOb >= 0 ? (row[iOb] ?? "") : "", telefono: iTel >= 0 ? (row[iTel] ?? "") : ""
                     });
                 }
                 RAW_DATA_CACHE.aux = parsed;
@@ -553,13 +554,12 @@
                     window.checkManualReady();
                 } else {
                     if(RAW_DATA_CACHE.detail && RAW_DATA_CACHE.detail.length > 0) { window.analyzeData(RAW_DATA_CACHE.detail, RAW_DATA_CACHE.states, RAW_DATA_CACHE.digital, false); document.getElementById('tabNavigation')?.classList.remove('hidden'); window.switchTab('main'); } else { window.renderAuxDashboard(); document.getElementById('tabNavigation')?.classList.remove('hidden'); window.switchTab('aux'); }
-                    Swal.fire("Éxito", `Se cruzaron ${RAW_DATA_CACHE.aux.length} llamadas.`, "success");
+                    Swal.fire("Éxito", `Se cruzaron ${RAW_DATA_CACHE.aux.length} llamadas al instante.`, "success");
                 }
             } catch(err) { Swal.fire("Error", err.message, "error"); } e.target.value = ''; 
         }; reader.readAsArrayBuffer(file);
     }
 
-    // --- 4. FORMATTERS & MATH ---
     function getManualSup(name) { const clean = cleanName(name); for(const [sup, members] of Object.entries(MANUAL_TEAMS)) { if(members.some(m => cleanName(m) === clean)) return sup; } return null; }
     const norm = (s) => String(s||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     function getAgentId(name) { const c = norm(name); for(let key in AGENT_IDS) { if(c.includes(norm(key)) || norm(key).includes(c)) return AGENT_IDS[key]; } return "S/ID"; }
@@ -582,10 +582,7 @@
     function extractDateAndTime(val) { 
         if (val === undefined || val === null || val === "") return { date: '', time: '' }; 
         if (typeof val === 'number') { 
-            if(val > 20000 && val < 300000) {
-                const d = new Date(Math.round((val - 25569) * 86400 * 1000)); 
-                if(!isNaN(d)) return { date: d.toISOString().split('T')[0], time: d.toISOString().split('T')[1].substr(0,8) }; 
-            }
+            if(val > 20000 && val < 300000) { const d = new Date(Math.round((val - 25569) * 86400 * 1000)); if(!isNaN(d)) return { date: d.toISOString().split('T')[0], time: d.toISOString().split('T')[1].substr(0,8) }; }
             return { date: '', time: '' };
         } 
         let s = String(val).trim(); let datePart = s, timePart = ''; 
@@ -600,10 +597,25 @@
     function getVal(row, keywords) { const keys = Object.keys(row); const k = keys.find(key => keywords.some(kw => key.toLowerCase() === kw.toLowerCase() || key.toLowerCase().includes(kw.toLowerCase()))); return k ? row[k] : undefined; }
     function extractTime(str) { let t = String(str).trim(); if(t.includes(' ')) t = t.split(' ').pop(); else if(t.includes('T')) t = t.split('T')[1]; let p = t.split(':'); if(p.length >= 2) return p[0].padStart(2,'0') + ':' + p[1].padStart(2,'0'); return t.substr(0,5); }
 
-    // --- 5. CORE LOGIC ---
     window.analyzeData = function(detailRows, stateRows, digitalRows, resetUI = true) {
         UNIQUE_AGENTS.clear(); const shiftMap = {}; const supervisorMap = {}; 
-        if (stateRows) { stateRows.forEach(row => { const a = getVal(row, ['agente','nombre']); const f = getVal(row, ['fecha','dia']); if(a && f) { const key = `${cleanName(a)}|${normalizeDate(f)}`; let sup = getManualSup(a); if(!sup) sup = getVal(row, ['supervisor', 'team leader', 'jefe']); if(sup) supervisorMap[cleanName(a)] = cleanName(sup); const startRule = getVal(row, ['inicio turnor regla', 'entrada planificada', 'turno inicio']); const endRule = getVal(row, ['fin turno regla', 'salida planificada', 'turno fin']); shiftMap[key] = { start: getVal(row, ['inicio turnor','inicio']), end: getVal(row, ['fin turno','fin']), ruleStart: startRule, ruleEnd: endRule }; } }); }
+        
+        // PRD: EXTRACT 'EN LINEA' FROM STATES SHEET
+        if (stateRows) { 
+            stateRows.forEach(row => { 
+                const a = getVal(row, ['agente','nombre']); const f = getVal(row, ['fecha','dia']); 
+                if(a && f) { 
+                    const key = `${cleanName(a)}|${normalizeDate(f)}`; 
+                    let sup = getManualSup(a); if(!sup) sup = getVal(row, ['supervisor', 'team leader', 'jefe']); 
+                    if(sup) supervisorMap[cleanName(a)] = cleanName(sup); 
+                    const startRule = getVal(row, ['inicio turnor regla', 'entrada planificada', 'turno inicio']); 
+                    const endRule = getVal(row, ['fin turno regla', 'salida planificada', 'turno fin']); 
+                    const enLinea = getVal(row, ['en linea', 'en_linea']); 
+                    shiftMap[key] = { start: getVal(row, ['inicio turnor','inicio']), end: getVal(row, ['fin turno','fin']), ruleStart: startRule, ruleEnd: endRule, en_linea: enLinea }; 
+                } 
+            }); 
+        }
+        
         const digitalMap = {}; if (digitalRows) { digitalRows.forEach(row => { const f=getVal(row, ['fecha']), a=getVal(row, ['agente']), h=getVal(row, ['horas']); if(f&&a&&h) { const key=`${cleanName(a)}|${normalizeDate(f)}`; digitalMap[key]=(digitalMap[key]||0) + parseFloat(h)*3600; } }); }
         const groups = {}; if (detailRows) { detailRows.forEach(row => { const a=getVal(row, ['agente']), f=getVal(row, ['fecha']); if(!a) return; const name=cleanName(a), date=normalizeDate(f), key=`${name}|${date}`; UNIQUE_AGENTS.add(name); if(!groups[key]) groups[key]={agent:name, date:date, regs:[]}; groups[key].regs.push({ estado:String(getVal(row,['estado'])||"").toLowerCase(), inicio:getVal(row,['inicio']), tiempo:getVal(row,['tiempo']) }); }); }
         
@@ -612,12 +624,13 @@
         const groupedAux = {}; 
         if(RAW_DATA_CACHE.aux) { 
             RAW_DATA_CACHE.aux.forEach(r => { 
-                const aRaw = r.agente; const fRaw = r.fecha; 
-                if(aRaw && fRaw) { 
-                    const dt = extractDateAndTime(fRaw); 
-                    if(dt.date && dt.date.length === 10) allValidDates.add(dt.date);
-                    const aMap = cleanName(mapAuxAgent(aRaw)); const fMap = dt.date; const key = `${aMap}|${fMap}`; 
-                    if(!groupedAux[key]) groupedAux[key] = []; groupedAux[key].push(r); 
+                if(!r._d) { const dt = extractDateAndTime(r.fecha); r._d = dt.date; r._t = dt.time; }
+                if(!r._a) { r._a = mapAuxAgent(r.agente); r._a_low = r._a.toLowerCase(); }
+                if(r._a && r._d) { 
+                    if(r._d.length === 10) allValidDates.add(r._d);
+                    const key = `${cleanName(r._a)}|${r._d}`; 
+                    if(!groupedAux[key]) groupedAux[key] = []; 
+                    groupedAux[key].push(r); 
                 } 
             }); 
         }
@@ -638,11 +651,22 @@
             if(firstLogin !== null && lastLogout !== null && lastLogout > firstLogin) { stats.t_conectado_real = lastLogout - firstLogin; stats.login_real_str = `${extractTime(firstLoginStr)} - ${extractTime(lastLogoutStr)}`; } 
             else { stats.t_conectado_real = stats.t_hablado_tel+stats.t_acw+stats.t_break+stats.t_almuerzo+stats.t_bano+stats.t_idle+stats.t_cap+stats.t_admin; }
 
-            const key = `${g.agent}|${g.date}`; if(digitalMap[key]) stats.t_hablado_digital = digitalMap[key]; stats.t_hablado = stats.t_hablado_tel + stats.t_hablado_digital;
-            const shift = shiftMap[key]; if(shift) { if(shift.start && shift.end && !String(shift.start).includes('sin')) { const s=timeToSec(shift.start), e=timeToSec(shift.end); if(e>s) stats.t_contratado=e-s; } if(shift.ruleStart && shift.ruleEnd) { stats.turno_str = `${extractTime(shift.ruleStart)} - ${extractTime(shift.ruleEnd)}`; const rs = timeToSec(shift.ruleStart), re = timeToSec(shift.ruleEnd); if(firstLogin !== null && firstLogin > rs) stats.atraso = firstLogin - rs; if(lastLogout !== null && lastLogout < re) stats.desconexion = re - lastLogout; } else if (shift.start && shift.end) { stats.turno_str = `${extractTime(shift.start)} - ${extractTime(shift.end)}`; } }
+            const key = `${cleanName(g.agent)}|${g.date}`; 
+            stats.aux_logs = groupedAux[key] || [];
 
-            stats.t_hablado_tel_orig = stats.t_hablado_tel; stats.t_acw_orig = stats.t_acw; stats.c_calls_orig = stats.c_calls; stats.obs_vacias = 0;
-            stats.hasFeedback = FEEDBACK_DATA.some(f => cleanName(f.ejecutivo) === stats.agente && (normalizeDate(f.fecha_desviacion) === stats.fecha || normalizeDate(f.fecha_desv) === stats.fecha));
+            if(digitalMap[key]) stats.t_hablado_digital = digitalMap[key]; 
+            stats.t_hablado = stats.t_hablado_tel + stats.t_hablado_digital;
+            
+            const shift = shiftMap[key]; 
+            stats.t_en_linea = 0;
+            
+            if(shift) { 
+                stats.t_en_linea = shift.en_linea ? timeToSec(shift.en_linea) : 0; 
+                if(shift.start && shift.end && !String(shift.start).includes('sin')) { const s=timeToSec(shift.start), e=timeToSec(shift.end); if(e>s) stats.t_contratado=e-s; } if(shift.ruleStart && shift.ruleEnd) { stats.turno_str = `${extractTime(shift.ruleStart)} - ${extractTime(shift.ruleEnd)}`; const rs = timeToSec(shift.ruleStart), re = timeToSec(shift.ruleEnd); if(firstLogin !== null && firstLogin > rs) stats.atraso = firstLogin - rs; if(lastLogout !== null && lastLogout < re) stats.desconexion = re - lastLogout; } else if (shift.start && shift.end) { stats.turno_str = `${extractTime(shift.start)} - ${extractTime(shift.end)}`; } 
+            }
+
+            stats.t_hablado_tel_orig = stats.t_hablado_tel; stats.t_acw_orig = stats.t_acw; stats.c_calls_orig = stats.c_calls;
+            stats.hasFeedback = FEEDBACK_DATA.some(f => cleanName(f.ejecutivo) === cleanName(stats.agente) && (normalizeDate(f.fecha_desviacion) === stats.fecha || normalizeDate(f.fecha_desv) === stats.fecha));
             return stats;
         });
 
@@ -652,7 +676,6 @@
         if(resetUI && sortedDates.length > 0) { 
             minDate = sortedDates[0]; maxDate = sortedDates[sortedDates.length-1];
             window.setFullRange(); 
-            // Default Aux Date
             const axD = document.getElementById('auxDate'); if(axD && !axD.value) axD.value = maxDate;
         } else window.applyFilters();
         
@@ -661,6 +684,9 @@
             [...UNIQUE_AGENTS].sort().forEach(a => { a1.innerHTML += `<option value="${a}">${a}</option>`; a2.innerHTML += `<option value="${a}">${a}</option>`; a3.innerHTML += `<option value="${a}">${a}</option>`; });
         }
     }
+
+    window.debouncedApplyFilters = function() { clearTimeout(filterDebounceTimer); filterDebounceTimer = setTimeout(() => { window.applyFilters(); }, 300); }
+    window.debouncedRenderAux = function() { clearTimeout(auxDebounceTimer); auxDebounceTimer = setTimeout(() => { window.renderAuxDashboard(); }, 300); }
 
     window.setFullRange = function() { if(minDate) { const dS = document.getElementById('dateStart'); const dE = document.getElementById('dateEnd'); if(dS) dS.value = minDate; if(dE) dE.value = maxDate; window.applyFilters(); } }
     window.clearFilters = function() { const a=document.getElementById('agentSearch'), s=document.getElementById('supervisorFilter'), fS=document.getElementById('filterSentido'), fE=document.getElementById('filterEstadoCall'); if(a)a.value=''; if(s)s.value=''; if(fS)fS.value=''; if(fE)fE.value=''; SHOW_ONLY_FEEDBACK = false; document.getElementById('btnToggleFeed')?.classList.remove('btn-active'); window.setFullRange(); }
@@ -684,29 +710,27 @@
         document.getElementById('btnClearAgentFilter')?.classList.toggle('hidden', term === '');
 
         GLOBAL_DATA.forEach(d => {
-            if(RAW_DATA_CACHE.aux && RAW_DATA_CACHE.aux.length > 0) {
-                let fAux = RAW_DATA_CACHE.aux.filter(r => cleanName(mapAuxAgent(r.agente)) === d.agente && extractDateAndTime(r.fecha).date === d.fecha);
+            if(d.aux_logs && d.aux_logs.length > 0) {
+                let fAux = d.aux_logs;
                 if(fSentido) fAux = fAux.filter(r => String(r.sentido).toLowerCase().includes(fSentido)); 
                 if(fEstadoCall) fAux = fAux.filter(r => String(r.estado).toLowerCase().includes(fEstadoCall));
                 
-                let new_t_hab = 0, atend_c = 0, no_atend_c = 0, tmo_t = 0, vac_c = 0, cort_c = 0;
+                let new_t_hab = 0, atend_c = 0, no_atend_c = 0, tmo_t = 0, cort_c = 0;
                 fAux.forEach(r => {
                     const tLla = timeToSec(r.tiempo_de_llamada), st = String(r.estado).toLowerCase().trim();
                     let isAt = (st.includes('atendida') || st.includes('conectad') || st === 'ok' || st === '' || tLla > 0) && !st.includes('no-atendida') && !st.includes('no atendida') && !st.includes('abandonada') && !st.includes('falla');
                     if (isAt) { 
                         atend_c++; tmo_t += tLla; new_t_hab += tLla; if(tLla > 0 && tLla < SHORT_CALL_THRESHOLD) cort_c++;
-                        // STRICT OBS VACIAS
-                        const obs = String(r.observacion).trim().toLowerCase();
-                        if(obs === '' || obs === 'null' || obs === 'undefined' || obs === 'n/a' || obs === '-' || obs === '0') vac_c++;
                     } else no_atend_c++;
                 });
-                d.c_calls = atend_c; d.c_no_atendidas = no_atend_c; d.contactabilidad = (atend_c + no_atend_c) > 0 ? (atend_c / (atend_c + no_atend_c)) * 100 : 0; d.c_short_calls = cort_c; d.obs_vacias = vac_c; d.t_hablado_tel = new_t_hab; d.t_hablado = new_t_hab + d.t_hablado_digital; d.t_acw = Math.max(0, d.t_hablado_tel_orig - new_t_hab); d.tmo = d.c_calls > 0 ? tmo_t / d.c_calls : 0;
-                const tot_interacciones = atend_c + no_atend_c; d.idle_avg = tot_interacciones > 0 ? d.t_acw / tot_interacciones : 0; // P-ACW formula
-            } else { d.c_calls = d.c_calls_orig; d.c_no_atendidas = 0; d.contactabilidad = 0; d.t_hablado_tel = d.t_hablado_tel_orig; d.t_hablado = d.t_hablado_tel + d.t_hablado_digital; d.t_acw = d.t_acw_orig; d.idle_avg = d.c_calls > 0 ? d.t_acw / d.c_calls : 0; d.tmo = d.c_calls > 0 ? d.t_hablado_tel / d.c_calls : 0; d.obs_vacias = 0; d.c_short_calls = 0; }
+                d.c_calls = atend_c; d.c_no_atendidas = no_atend_c; d.contactabilidad = (atend_c + no_atend_c) > 0 ? (atend_c / (atend_c + no_atend_c)) * 100 : 0; d.c_short_calls = cort_c; d.t_hablado_tel = new_t_hab; d.t_hablado = new_t_hab + d.t_hablado_digital; d.t_acw = Math.max(0, d.t_hablado_tel_orig - new_t_hab); d.tmo = d.c_calls > 0 ? tmo_t / d.c_calls : 0;
+                d.idle_avg = d.c_calls > 0 ? d.t_acw / d.c_calls : 0; 
+            } else { d.c_calls = d.c_calls_orig; d.c_no_atendidas = 0; d.contactabilidad = 0; d.t_hablado_tel = d.t_hablado_tel_orig; d.t_hablado = d.t_hablado_tel + d.t_hablado_digital; d.t_acw = d.t_acw_orig; d.idle_avg = d.c_calls > 0 ? d.t_acw / d.c_calls : 0; d.tmo = d.c_calls > 0 ? d.t_hablado_tel / d.c_calls : 0; d.c_short_calls = 0; }
             
-            d.occ = d.t_conectado_real > 0 ? ((d.t_hablado + d.t_acw) / d.t_conectado_real) * 100 : 0; const t_alm = d.t_almuerzo>0 ? (d.t_almuerzo<=2700?1800:3600) : 0; let base_p = (d.t_contratado > 0 ? d.t_contratado : d.t_conectado_real) - t_alm; if(base_p <= 0 && d.t_conectado_real > 0) base_p = d.t_conectado_real - t_alm; d.base_calculo = base_p > 0 ? base_p : 0; d.prod = base_p > 0 ? (d.t_hablado / base_p) * 100 : 0; d.t_contratado_base = d.t_contratado > 0 ? d.t_contratado : d.t_conectado_real; d.adh = d.t_contratado_base > 0 ? (d.t_conectado_real / d.t_contratado_base) * 100 : (d.t_conectado_real > 0 ? 100 : 0);
+            d.p_en_linea = (d.c_calls + d.c_no_atendidas) > 0 ? d.t_en_linea / (d.c_calls + d.c_no_atendidas) : 0;
             
-            // EXCLUSION SALIENTE PRODUCTIVIDAD < 5% O CEROS
+            d.occ = d.t_conectado_real > 0 ? ((d.t_hablado + d.t_acw) / d.t_conectado_real) * 100 : 0; const t_alm = d.t_almuerzo>0 ? (d.t_almuerzo<=2700?1800:3600) : 0; let base_p = (d.t_contratado > 0 ? d.t_contratado : d.t_conectado_real) - t_alm; if(base_p <= 0 && d.t_conectado_real > 0) base_p = d.t_conectado_real - t_alm; d.base_calculo = base_p > 0 ? base_p : 0; d.prod = base_p > 0 ? (d.t_hablado / d.t_conectado_real) * 100 : 0; d.t_contratado_base = d.t_contratado > 0 ? d.t_contratado : d.t_conectado_real; d.adh = d.t_contratado_base > 0 ? (d.t_conectado_real / d.t_contratado_base) * 100 : (d.t_conectado_real > 0 ? 100 : 0);
+            
             d._excludeTotal = false;
             if (fSentido === 'entrante' || fSentido === 'saliente') { if (d.prod < 5 || d.tmo === 0 || d.contactabilidad === 0 || d.c_calls === 0) d._excludeTotal = true; }
         });
@@ -730,32 +754,41 @@
             const team = GLOBAL_DATA.filter(d => d.supervisor === sName && (!sD || d.fecha >= sD) && (!eD || d.fecha <= eD) && !d._excludeTotal);
             let h=0, con=0, net=0, feed=0, calls=0, acw=0, h_tel=0, con_p=0, no_at=0;
             team.forEach(d => { h+=d.t_hablado; h_tel+=d.t_hablado_tel; con+=d.t_conectado_real; net+=d.base_calculo; acw+=d.t_acw; calls+=d.c_calls; no_at+=d.c_no_atendidas; con_p+=d.t_contratado_base; if(d.hasFeedback) feed++; });
-            const prod = net?(h/net)*100:0; const adh = con_p>0?(con/con_p)*100:(con>0?100:0); const occ = con?((h+acw)/con)*100:0; const tmo = calls?h_tel/calls:0; const idle = (calls+no_at)?acw/(calls+no_at):0; 
+            const prod = con?(h/con)*100:0; const adh = con_p>0?(con/con_p)*100:(con>0?100:0); const occ = con?((h+acw)/con)*100:0; const tmo = calls?h_tel/calls:0; 
+            const idle = calls ? acw / calls : 0; 
             const c = { "Luis Cataldo":"blue", "Angélica Ferrada":"pink", "Carla Cabrera":"orange", "Aracely Torres":"purple" }[sName] || "slate";
             grid.innerHTML += `<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 clickable-card hover-card relative overflow-hidden" onclick="window.filterBySupCard('${sName}')"><div class="absolute right-0 top-0 h-full w-1 bg-${c}-500"></div><div class="flex justify-between items-start mb-3"><div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Equipo</p><h3 class="text-lg font-bold text-slate-800">${sName}</h3></div><div class="bg-${c}-100 text-${c}-700 px-2 py-1 rounded text-xs font-bold">${new Set(team.map(d=>d.agente)).size}</div></div><div class="grid grid-cols-3 gap-2 text-center text-xs mb-2"><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">Prod</p><p class="font-bold text-blue-600">${(Number(prod)||0).toFixed(0)}%</p></div><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">Adh</p><p class="font-bold text-teal-600">${(Number(adh)||0).toFixed(0)}%</p></div><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">Ocup</p><p class="font-bold text-orange-600">${(Number(occ)||0).toFixed(0)}%</p></div></div><div class="grid grid-cols-3 gap-2 text-center text-xs"><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">TMO</p><p class="font-bold text-indigo-600">${secToTime(tmo, true)}</p></div><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">P-ACW</p><p class="font-bold text-gray-600">${secToTime(idle, true)}</p></div><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">Feed</p><p class="font-bold text-purple-600">${feed}</p></div></div></div>`;
         });
     }
 
     window.updateKPIs = function() {
-        let h=0, acw=0, con=0, net=0, calls=0, h_tel=0, shorts=0, con_plan=0, obs_tot=0, no_atend_tot=0;
-        FILTERED_DATA.forEach(d => { h+=d.t_hablado; h_tel+=d.t_hablado_tel; acw+=d.t_acw; con+=d.t_conectado_real; calls+=d.c_calls; net+=d.base_calculo; shorts+=d.c_short_calls; con_plan+=d.t_contratado_base; obs_tot+=d.obs_vacias; no_atend_tot+=d.c_no_atendidas; });
+        let h=0, acw=0, con=0, net=0, calls=0, h_tel=0, shorts=0, con_plan=0, en_linea_tot=0, no_atend_tot=0;
+        FILTERED_DATA.forEach(d => { h+=d.t_hablado; h_tel+=d.t_hablado_tel; acw+=d.t_acw; con+=d.t_conectado_real; calls+=d.c_calls; net+=d.base_calculo; shorts+=d.c_short_calls; con_plan+=d.t_contratado_base; en_linea_tot+=d.t_en_linea; no_atend_tot+=d.c_no_atendidas; });
         const grid = document.getElementById('kpiGlobalGrid'); if(!grid) return; grid.innerHTML = '';
         const add = (lbl, val, meta, eq, cl) => grid.innerHTML += `<div class="bg-white p-4 rounded-xl border border-${cl}-200 shadow-sm flex flex-col justify-between ${cl!=='slate'?'bg-'+cl+'-50/30':''}"><div><p class="text-[10px] font-bold text-${cl}-600 uppercase">${lbl}</p><p class="text-2xl font-bold text-${cl}-700">${val}</p></div><div class="mt-2 pt-2 border-t border-${cl}-100"><p class="text-[9px] text-${cl}-700 font-bold mb-0.5">${meta}</p><p class="text-[8px] text-${cl}-500 leading-tight">${eq}</p></div></div>`;
         
         let total_interacciones = calls + no_atend_tot;
-        add("Productividad", (Number(net?(h/net)*100:0)||0).toFixed(1)+'%', "Meta: >= 70%", "Hablado / Base", "blue");
+        add("Productividad", (Number(con?(h/con)*100:0)||0).toFixed(1)+'%', "Meta: >= 70%", "Hablado / Conexión", "blue");
         add("Adherencia", (Number(con_plan>0?(con/con_plan)*100:(con>0?100:0))||0).toFixed(1)+'%', "Meta: 90% - 105%", "Conex. / Planificado", "teal");
         add("Ocupación", (Number(con?((h+acw)/con)*100:0)||0).toFixed(1)+'%', "Meta: 95% - 105%", "(Habl.+ACW)/Conex.", "orange");
         add("TMO Global", secToTime(calls?h_tel/calls:0, true), "Meta: < 3 min", "Hablado / Atendidas", "indigo");
-        add("P-ACW (Avg)", secToTime(total_interacciones?acw/total_interacciones:0, true), "Meta: < 1 min", "ACW Total / Llamadas", "gray");
+        add("P-ACW (Avg)", secToTime(calls ? acw / calls : 0, true), "Meta: < 1 min", "ACW Total / Atendidas", "gray");
         add("Cortas", shorts, "Informativo", "Bajo umbral", "red");
-        add("Obs. Vacías", obs_tot, "Auxiliar", "Sin llenar (Atendidas)", "purple");
+        add("P-enlinea (Avg)", secToTime(total_interacciones ? en_linea_tot / total_interacciones : 0, true), "Estados / Interacciones", "En Línea / Totales", "purple");
         add("Contactabilidad", (Number(total_interacciones?(calls/total_interacciones)*100:0)||0).toFixed(1)+'%', "Auxiliar", "Atend./Totales", "sky");
     }
 
     window.renderCharts = function() {
         const dates = [...new Set(FILTERED_DATA.map(d=>d.fecha))].sort(); const dP=[], dA=[], dO=[], dI=[];
-        dates.forEach(date => { const day = FILTERED_DATA.filter(d=>d.fecha===date); let h=0, n=0, c=0, a=0, cl=0, cp=0, noat=0; day.forEach(d=>{ h+=d.t_hablado; n+=d.base_calculo; c+=d.t_conectado_real; a+=d.t_acw; cl+=d.c_calls; noat+=d.c_no_atendidas; cp+=d.t_contratado_base; }); dP.push(n?(h/n)*100:0); dA.push(cp>0?(c/cp)*100:(c>0?100:0)); dO.push(c?((h+a)/c)*100:0); dI.push((cl+noat)?a/(cl+noat):0); });
+        dates.forEach(date => { 
+            const day = FILTERED_DATA.filter(d=>d.fecha===date); 
+            let h=0, n=0, c=0, a=0, cl=0, cp=0, noat=0; 
+            day.forEach(d=>{ h+=d.t_hablado; n+=d.base_calculo; c+=d.t_conectado_real; a+=d.t_acw; cl+=d.c_calls; noat+=d.c_no_atendidas; cp+=d.t_contratado_base; }); 
+            dP.push(c?(h/c)*100:0); 
+            dA.push(cp>0?(c/cp)*100:(c>0?100:0)); 
+            dO.push(c?((h+a)/c)*100:0); 
+            dI.push(cl ? a / cl : 0); 
+        });
         const canvas = document.getElementById('chartEvolution'); if(!canvas) return;
         if(charts['evolution']) charts['evolution'].destroy();
         charts['evolution'] = new Chart(canvas, { type: 'line', data: { labels: dates, datasets: [ { label: 'Prod', data: dP, borderColor: '#2563eb', tension: 0.3, yAxisID: 'y' }, { label: 'Adh', data: dA, borderColor: '#0d9488', tension: 0.3, yAxisID: 'y' }, { label: 'Ocup', data: dO, borderColor: '#ea580c', tension: 0.3, yAxisID: 'y' }, { label: 'P-ACW', data: dI, borderColor: '#64748b', tension: 0.3, yAxisID: 'y1' } ] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, y1: { position: 'right', beginAtZero: true, grid: { drawOnChartArea: false } } } } });
@@ -766,28 +799,27 @@
     window.renderRankCards = function() {
         const grid = document.getElementById('rankGrid'); if(!grid) return; grid.innerHTML = '';
         const build = (title, sortK, fmt, cl) => {
-            const grouped = {}; FILTERED_DATA.forEach(d => { if(!grouped[d.agente]) grouped[d.agente] = { ...d, count:0, sumV:0 }; grouped[d.agente].count++; grouped[d.agente].sumV += (sortK==='tmo'?d.tmo: (sortK==='idle'?d.idle_avg: (sortK==='short'?d.c_short_calls : (sortK==='obs'?d.obs_vacias : (sortK==='contact'?d.contactabilidad : d[sortK]))))); });
-            let list = Object.values(grouped).map(g => { let val = ['prod','adh','occ','contact','tmo','idle'].includes(sortK) ? g.sumV/g.count : g.sumV; return { name: g.agente, val }; });
+            const grouped = {}; FILTERED_DATA.forEach(d => { if(!grouped[d.agente]) grouped[d.agente] = { ...d, count:0, sumV:0 }; grouped[d.agente].count++; grouped[d.agente].sumV += (sortK==='tmo'?d.tmo: (sortK==='idle'?d.idle_avg: (sortK==='short'?d.c_short_calls : (sortK==='p_enlinea'?d.p_en_linea : (sortK==='contact'?d.contactabilidad : d[sortK]))))); });
+            let list = Object.values(grouped).map(g => { let val = ['prod','adh','occ','contact','tmo','idle','p_enlinea'].includes(sortK) ? g.sumV/g.count : g.sumV; return { name: g.agente, val }; });
             list.sort((a,b) => ((b.val||0) - (a.val||0)) * (cardSortState[sortK]||-1));
             let html = `<div class="bg-white rounded-lg shadow-sm border border-${cl}-200 h-64 flex flex-col overflow-hidden"><div class="px-3 py-2 bg-${cl}-50 border-b font-bold text-[10px] uppercase text-${cl}-700 cursor-pointer flex justify-between" onclick="window.toggleCardSort('${sortK}')"><span>${title}</span><i class="fas fa-sort"></i></div><div class="scroller overflow-y-auto flex-grow p-1"><table class="w-full text-[10px]">`;
             list.map((x,i) => html += `<tr class="border-b border-slate-50 hover:bg-slate-50"><td class="p-1.5 truncate max-w-[80px] cursor-pointer hover:text-${cl}-600" onclick="window.setAgentFilter('${x.name}')">${i+1}. ${x.name}</td><td class="p-1.5 text-right font-bold text-${cl}-600">${fmt(x.val)}</td></tr>`);
             grid.innerHTML += html + `</table></div></div>`;
         };
-        build("Prod", "prod", v=>(Number(v)||0).toFixed(0)+'%', 'blue'); build("Adh", "adh", v=>(Number(v)||0).toFixed(0)+'%', 'teal'); build("Ocup", "occ", v=>(Number(v)||0).toFixed(0)+'%', 'orange'); build("TMO", "tmo", v=>secToTime(v,true), 'indigo'); build("P-ACW", "idle", v=>secToTime(v,true), 'gray'); build("Cortas", "short", v=>Math.round(v||0), 'red'); build("Obs Vac", "obs", v=>Math.round(v||0), 'purple'); build("Contact", "contact", v=>(Number(v)||0).toFixed(1)+'%', 'sky');
+        build("Prod", "prod", v=>(Number(v)||0).toFixed(0)+'%', 'blue'); build("Adh", "adh", v=>(Number(v)||0).toFixed(0)+'%', 'teal'); build("Ocup", "occ", v=>(Number(v)||0).toFixed(0)+'%', 'orange'); build("TMO", "tmo", v=>secToTime(v,true), 'indigo'); build("P-ACW", "idle", v=>secToTime(v,true), 'gray'); build("Cortas", "short", v=>Math.round(v||0), 'red'); build("P-enlinea", "p_enlinea", v=>secToTime(v,true), 'purple'); build("Contact", "contact", v=>(Number(v)||0).toFixed(1)+'%', 'sky');
     }
 
     window.renderTable = function() {
         const rowHead = document.getElementById('tableHeadRow'); if(!rowHead) return;
-        const cols = [ {l:"Fecha", k:"fecha"}, {l:"Agente", k:"agente"}, {l:"Turno", k:"turno_str"}, {l:"Login Real", k:"login_real_str"}, {l:"Conex.", k:"t_conectado_real"}, {l:"Atraso", k:"atraso"}, {l:"Desc.", k:"desconexion"}, {l:"Totales", k:"_totales"}, {l:"Atend", k:"c_calls"}, {l:"No Atend", k:"c_no_atendidas"}, {l:"Contac", k:"contactabilidad"}, {l:"Cortas", k:"c_short_calls"}, {l:"TMO", k:"tmo"}, {l:"Hablado", k:"t_hablado"}, {l:"ACW", k:"t_acw"}, {l:"Obs Vac", k:"obs_vacias"}, {l:"P-ACW", k:"idle_avg"}, {l:"Cap", k:"t_cap"}, {l:"Adm", k:"t_admin"}, {l:"Bñ", k:"t_bano"}, {l:"Brk", k:"t_break"}, {l:"Alm", k:"t_almuerzo"}, {l:"Prod", k:"prod"}, {l:"Adh", k:"adh"}, {l:"Ocup", k:"occ"} ];
+        const cols = [ {l:"Fecha", k:"fecha"}, {l:"Agente", k:"agente"}, {l:"Turno", k:"turno_str"}, {l:"Login Real", k:"login_real_str"}, {l:"Conex.", k:"t_conectado_real"}, {l:"Atraso", k:"atraso"}, {l:"Desc.", k:"desconexion"}, {l:"Totales", k:"_totales"}, {l:"Atend", k:"c_calls"}, {l:"No Atend", k:"c_no_atendidas"}, {l:"Contac", k:"contactabilidad"}, {l:"Cortas", k:"c_short_calls"}, {l:"TMO", k:"tmo"}, {l:"Hablado", k:"t_hablado"}, {l:"En Línea", k:"t_en_linea"}, {l:"ACW", k:"t_acw"}, {l:"P-enlinea", k:"p_en_linea"}, {l:"P-ACW", k:"idle_avg"}, {l:"Cap", k:"t_cap"}, {l:"Adm", k:"t_admin"}, {l:"Bñ", k:"t_bano"}, {l:"Brk", k:"t_break"}, {l:"Alm", k:"t_almuerzo"}, {l:"Prod", k:"prod"}, {l:"Adh", k:"adh"}, {l:"Ocup", k:"occ"} ];
         rowHead.innerHTML = cols.map(c => `<th class="px-2 py-3 cursor-pointer hover:bg-slate-200" onclick="window.sort('${c.k}')">${c.l}</th>`).join('');
         const tb = document.getElementById('tableBody'); tb.innerHTML = '';
         FILTERED_DATA.slice(0, VISIBLE_ROWS).forEach((d, idx) => {
             const tr = document.createElement('tr'); tr.className = d.hasFeedback ? "feedback-done cursor-pointer" : "hover:bg-blue-50/30 bg-white cursor-pointer"; tr.onclick = ()=>window.toggleRowHighlight(`row-${idx}`); tr.id = `row-${idx}`;
-            const icon = d.hasFeedback ? '<i class="fas fa-check-circle text-green-600"></i>' : '<i class="far fa-circle text-slate-300 group-hover:text-indigo-500"></i>'; const nameColor = d.hasFeedback ? 'text-green-800' : 'text-slate-700';
             let hDisp = secToTime(d.t_hablado), hCls = "text-green-700"; if(d.t_hablado_digital>0) { hDisp=`<span title="Tel: ${secToTime(d.t_hablado_tel)} | Wsp: ${secToTime(d.t_hablado_digital)}">📱 ${hDisp}</span>`; hCls="text-emerald-600 font-bold cursor-help"; }
             const atrasoStr = d.atraso > 1 ? `<span class="text-red-600 font-bold bg-red-100 px-1 rounded">${secToTime(d.atraso)}</span>` : '<span class="text-slate-300">-</span>'; const descStr = d.desconexion > 1 ? `<span class="text-red-600 font-bold bg-red-100 px-1 rounded">${secToTime(d.desconexion)}</span>` : '<span class="text-slate-300">-</span>';
             const clsCap = d.t_cap > 60 ? "alert-cell-red" : ""; const clsAdm = d.t_admin > 60 ? "alert-cell-red" : ""; const clsBano = d.t_bano > 600 ? "alert-cell-red" : ""; const clsBrk = d.t_break > 1800 ? "alert-cell-orange" : ""; const clsAlm = d.t_almuerzo > 3600 ? "alert-cell-orange" : "";
-            const clsProd = d.prod < 70 ? "text-red-600 font-bold bg-red-50" : "text-teal-700 bg-teal-50"; const clsAdh = (d.adh < 90 || d.adh > 105) ? "text-red-600 font-bold bg-red-50" : "text-teal-700"; const clsOcc = (d.occ < 95 || d.occ > 105) ? "text-red-600 font-bold bg-orange-50" : "text-orange-700"; const clsIdle = d.idle_avg > 60 ? "alert-cell-red" : "text-gray-500"; 
+            const clsProd = d.prod < 70 ? "text-red-600 font-bold bg-red-50" : "text-teal-700 bg-teal-50"; const clsAdh = (d.adh < 90 || d.adh > 105) ? "text-red-600 font-bold bg-red-50" : "text-teal-700"; const clsOcc = (d.occ < 95 || d.occ > 105) ? "text-red-600 font-bold bg-orange-50" : "text-orange-700"; 
             tr.innerHTML = `
                 <td class="px-2 py-3 font-mono whitespace-nowrap">${d.fecha}</td>
                 <td class="px-2 py-3 font-bold cursor-pointer text-blue-600 hover:underline" onclick="window.openFeedbackModal('${d.agente}', '${d.fecha}'); event.stopPropagation();">${d.hasFeedback?'<i class="fas fa-check-circle text-green-600 mr-1"></i>':''}${d.agente}</td>
@@ -803,8 +835,9 @@
                 <td class="px-2 py-3 text-right text-red-500">${d.c_short_calls}</td>
                 <td class="px-2 py-3 text-right text-indigo-600 font-bold border-l">${secToTime(d.tmo, true)}</td>
                 <td class="px-2 py-3 text-right font-mono ${hCls}">${hDisp}</td>
+                <td class="px-2 py-3 text-right font-mono text-purple-700">${secToTime(d.t_en_linea)}</td>
                 <td class="px-2 py-3 text-right font-mono">${secToTime(d.t_acw)}</td>
-                <td class="px-2 py-3 text-right text-purple-600 font-bold bg-purple-50/30">${d.obs_vacias}</td>
+                <td class="px-2 py-3 text-right text-purple-600 font-bold bg-purple-50/30">${secToTime(d.p_en_linea, true)}</td>
                 <td class="px-2 py-3 text-right ${d.idle_avg>60?'text-red-600 font-bold bg-red-50':''}">${secToTime(d.idle_avg, true)}</td>
                 <td class="px-2 py-3 text-right text-[10px] font-mono border-l ${clsCap}">${secToTime(d.t_cap)}</td>
                 <td class="px-2 py-3 text-right text-[10px] font-mono ${clsAdm}">${secToTime(d.t_admin)}</td>
@@ -848,17 +881,19 @@
         if(FILTERED_DATA.length === 0) return Swal.fire("Atención", "No hay datos para exportar.", "warning");
         const grouped = {};
         FILTERED_DATA.forEach(d => {
-            if(!grouped[d.agente]) { grouped[d.agente] = { name: d.agente, sup: d.supervisor, h: 0, net: 0, con: 0, con_plan: 0, acw: 0, calls: 0, no_atend: 0, h_tel: 0, obs: 0 }; }
-            grouped[d.agente].h += d.t_hablado; grouped[d.agente].net += d.base_calculo; grouped[d.agente].con += d.t_conectado_real; grouped[d.agente].con_plan += d.t_contratado_base; grouped[d.agente].acw += d.t_acw; grouped[d.agente].calls += d.c_calls; grouped[d.agente].no_atend += (d.c_no_atendidas || 0); grouped[d.agente].h_tel += d.t_hablado_tel; grouped[d.agente].obs += d.obs_vacias;
+            if(!grouped[d.agente]) { grouped[d.agente] = { name: d.agente, sup: d.supervisor, h: 0, net: 0, con: 0, con_plan: 0, acw: 0, calls: 0, no_atend: 0, h_tel: 0, en_linea: 0 }; }
+            grouped[d.agente].h += d.t_hablado; grouped[d.agente].net += d.base_calculo; grouped[d.agente].con += d.t_conectado_real; grouped[d.agente].con_plan += d.t_contratado_base; grouped[d.agente].acw += d.t_acw; grouped[d.agente].calls += d.c_calls; grouped[d.agente].no_atend += (d.c_no_atendidas || 0); grouped[d.agente].h_tel += d.t_hablado_tel; grouped[d.agente].en_linea += d.t_en_linea;
         });
         const exportData = Object.values(grouped).map(g => {
-            const prod = g.con ? (g.h / g.con) : 0; const adh = g.con_plan ? (g.con / g.con_plan) : (g.con > 0 ? 1 : 0); const occ = g.con ? ((g.h + g.acw) / g.con) : 0; const tmo = g.calls ? (g.h_tel / g.calls) : 0; const idle = (g.calls+g.no_atend) ? (g.acw / (g.calls+g.no_atend)) : 0; const contact = (g.calls + g.no_atend) > 0 ? (g.calls / (g.calls + g.no_atend)) * 100 : 0;
-            return { "ID": getAgentId(g.name), "Nombre": g.name, "Supervisor": g.sup, "Productividad": (Number(prod * 100)||0).toFixed(1) + "%", "Adherencia": (Number(adh * 100)||0).toFixed(1) + "%", "Ocupación": (Number(occ * 100)||0).toFixed(1) + "%", "TMO": secToTime(tmo, true), "P-ACW": secToTime(idle, true), "Atendidas": g.calls, "No Atendidas": g.no_atend, "Contactabilidad": (Number(contact)||0).toFixed(1) + "%", "Obs. Vacías": g.obs };
+            const prod = g.con ? (g.h / g.con) : 0; const adh = g.con_plan ? (g.con / g.con_plan) : (g.con > 0 ? 1 : 0); const occ = g.con ? ((g.h + g.acw) / g.con) : 0; const tmo = g.calls ? (g.h_tel / g.calls) : 0; 
+            const idle = g.calls ? (g.acw / g.calls) : 0; 
+            const p_enlinea = (g.calls + g.no_atend) > 0 ? (g.en_linea / (g.calls + g.no_atend)) : 0;
+            const contact = (g.calls + g.no_atend) > 0 ? (g.calls / (g.calls + g.no_atend)) * 100 : 0;
+            return { "ID": getAgentId(g.name), "Nombre": g.name, "Supervisor": g.sup, "Productividad": (Number(prod * 100)||0).toFixed(1) + "%", "Adherencia": (Number(adh * 100)||0).toFixed(1) + "%", "Ocupación": (Number(occ * 100)||0).toFixed(1) + "%", "TMO": secToTime(tmo, true), "En Línea": secToTime(g.en_linea), "P-enlinea": secToTime(p_enlinea, true), "P-ACW": secToTime(idle, true), "Atendidas": g.calls, "No Atendidas": g.no_atend, "Contactabilidad": (Number(contact)||0).toFixed(1) + "%" };
         });
         const ws = XLSX.utils.json_to_sheet(exportData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Resumen_Ejecutivos"); XLSX.writeFile(wb, "Resumen_Ejecutivos.xlsx");
     };
 
-    // --- DASHBOARD AUXILIAR DRAG & DROP LOGIC ---
     window.toggleAuxCol = function(id) { auxVisCols[id] = !auxVisCols[id]; window.renderAuxDashboard(); }
     window.handleDragStart = function(e, id) { auxDragSrcEl = id; e.dataTransfer.effectAllowed = 'move'; }
     window.handleDragOver = function(e) { if(e.preventDefault) e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }
@@ -875,7 +910,10 @@
     window.renderAuxDashboard = function() {
         if(!RAW_DATA_CACHE.aux || !RAW_DATA_CACHE.aux.length) return;
         const dF = document.getElementById('auxDate')?.value || '', tS = document.getElementById('auxTimeStart')?.value || '', tE = document.getElementById('auxTimeEnd')?.value || '', agent = (document.getElementById('auxAgentSearch')?.value || '').toLowerCase(), sent = (document.getElementById('auxSentido')?.value || '').toLowerCase(), intvF = document.getElementById('auxInterval')?.value || '';
-        let filtered = RAW_DATA_CACHE.aux.filter(r => { const dt=extractDateAndTime(r.fecha), aN=mapAuxAgent(r.agente).toLowerCase(), s=String(r.sentido||'').toLowerCase(); r._d=dt.date; r._t=dt.time; r._a=mapAuxAgent(r.agente); return (!dF||dt.date===dF) && (!tS||dt.time>=tS) && (!tE||dt.time<=tE) && (!agent||aN.includes(agent)) && (!sent||s.includes(sent)); });
+        
+        let filtered = RAW_DATA_CACHE.aux.filter(r => { 
+            return (!dF || r._d === dF) && (!tS || r._t >= tS) && (!tE || r._t <= tE) && (!agent || r._a_low.includes(agent)) && (!sent || String(r.sentido||'').toLowerCase().includes(sent)); 
+        });
         
         let atend=0, noat=0, dur=0; filtered.forEach(r => { const st=String(r.estado).toLowerCase().trim(), tL=timeToSec(r.tiempo_de_llamada); const isNoAt = st.includes('no-atendida') || st.includes('no atendida') || st.includes('abandonada') || st.includes('falla'); const isAt = !isNoAt && (st.includes('atendida') || st.includes('conectad') || st === 'ok' || st === '' || tL > 0); if(isNoAt) { noat++; } else if (isAt) { atend++; dur+=tL; } else { if(tL>0){atend++;dur+=tL;}else noat++; } });
         const grid = document.getElementById('auxKpiGrid'); grid.innerHTML = ''; const add = (l, v) => grid.innerHTML += `<div class="bg-white p-4 rounded-xl border border-purple-200 shadow-sm text-center"><p class="text-[10px] font-bold text-slate-400 uppercase">${l}</p><p class="text-2xl font-bold text-purple-700">${v}</p></div>`;
@@ -955,7 +993,7 @@
         const dF = document.getElementById('auxDate')?.value;
         const iv = parseInt(document.getElementById('auxInterval')?.value || '60');
         
-        let baseF = RAW_DATA_CACHE.aux.map(r => { const dt=extractDateAndTime(r.fecha); r._d = dt.date; r._t = dt.time; return r; });
+        let baseF = RAW_DATA_CACHE.aux;
         if(dF) baseF = baseF.filter(r => r._d === dF);
         
         let intervalsSet = new Set();
@@ -972,7 +1010,7 @@
             if(!agentName) return labels.map(()=>0);
             return labels.map(lbl => {
                 let f = baseF.filter(r => {
-                    if(cleanName(mapAuxAgent(r.agente)) !== agentName) return false;
+                    if(r._a !== agentName) return false;
                     const tP = r._t.split(':'); if(tP.length>=2) { const mins = parseInt(tP[0])*60+parseInt(tP[1]), bS = Math.floor(mins/iv)*iv; return `${pad(Math.floor(bS/60))}:${pad(bS%60)}` === lbl; } return false;
                 });
                 let at=0, noat=0, h=0; 
@@ -1048,7 +1086,6 @@
         btnDownload.download = `${dStr}_${tStr}_${exec}_${sup}.webm`; 
         btnDownload.classList.remove('hidden'); btnDownload.classList.add('flex');
         
-        // AUTO DOWNLOAD TRIGGER
         setTimeout(() => { btnDownload.click(); }, 300);
     }
 
@@ -1103,7 +1140,6 @@
         if(!currentFeedbackRow) return; 
         const doc = new jsPDF(); 
         
-        // 1. Cabecera Corporativa
         doc.setFillColor(79, 70, 229); 
         doc.rect(0, 0, 210, 30, 'F'); 
         doc.setTextColor(255, 255, 255); 
@@ -1111,7 +1147,6 @@
         doc.setFont("helvetica", "bold"); 
         doc.text("REPORTE DE GESTIÓN Y DESEMPEÑO", 105, 18, null, null, "center"); 
         
-        // 2. Bloque de Metadatos
         doc.setFillColor(248, 250, 252); 
         doc.setDrawColor(226, 232, 240); 
         doc.roundedRect(15, 40, 180, 40, 3, 3, 'FD');
@@ -1137,7 +1172,6 @@
         doc.setFont("helvetica", "bold"); doc.text("Audio Grabado:", 120, 70); 
         doc.setFont("helvetica", "normal"); doc.text(String(currentFeedbackRow.grabacion_audio || "NO"), 148, 70);
         
-        // 3. Cuerpo del Informe
         let y = 95;
         doc.setTextColor(79, 70, 229); 
         doc.setFont("helvetica", "bold"); 
@@ -1177,7 +1211,6 @@
         const splitComp = doc.splitTextToSize(currentFeedbackRow.compromiso || "Sin compromiso registrado.", 180); 
         doc.text(splitComp, 15, y);
         
-        // 4. Firmas
         y = 250; 
         doc.setDrawColor(203, 213, 225); 
         doc.setLineWidth(0.5); 
