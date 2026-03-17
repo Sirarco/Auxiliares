@@ -150,6 +150,7 @@
         <div id="tabNavigation" class="max-w-[1920px] mx-auto px-4 flex gap-4 hidden mt-1 border-b border-slate-200">
             <button onclick="window.switchTab('main')" id="tabBtnMain" class="px-4 py-2 font-bold text-xs border-b-2 border-blue-600 text-blue-600 transition-colors focus:outline-none">Dash General</button>
             <button onclick="window.switchTab('aux')" id="tabBtnAux" class="px-4 py-2 font-bold text-xs border-b-2 border-transparent text-slate-500 hover:text-purple-600 transition-colors focus:outline-none">Dash Auxiliar</button>
+            <button onclick="window.switchTab('quality')" id="tabBtnQuality" class="px-4 py-2 font-bold text-xs border-b-2 border-transparent text-slate-500 hover:text-emerald-600 transition-colors focus:outline-none">Dash Calidad</button>
         </div>
     </header>
 
@@ -350,6 +351,102 @@
                 </div>
             </div>
         </div>
+        
+        <div id="tabQualityContent" class="space-y-6 animate-fade-in pb-10 hidden">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-emerald-200 flex flex-col xl:flex-row gap-4 items-start xl:items-end flex-wrap bg-emerald-50/10">
+                <div class="w-full sm:w-auto flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-emerald-600 uppercase">Periodo</label>
+                    <div class="flex gap-2 items-center bg-white p-1 rounded-lg border border-emerald-200 flex-wrap">
+                        <input type="date" id="qDateStart" onchange="window.renderQualityDashboard()" class="bg-transparent text-xs w-28 outline-none text-slate-700 font-bold">
+                        <input type="date" id="qDateEnd" onchange="window.renderQualityDashboard()" class="bg-transparent text-xs w-28 outline-none text-slate-700 font-bold">
+                    </div>
+                </div>
+                <div class="flex-grow w-full sm:w-auto relative">
+                    <label class="text-[10px] font-bold text-emerald-600 uppercase">Filtro Ejecutivo</label>
+                    <div class="relative">
+                        <input list="agentsList" id="qAgentSearch" oninput="window.debouncedRenderQuality()" placeholder="Nombre..." class="w-full bg-white border border-emerald-200 rounded px-3 py-1.5 text-sm outline-none pr-8">
+                        <button onclick="document.getElementById('qAgentSearch').value=''; window.renderQualityDashboard();" class="absolute right-2 top-1.5 text-emerald-400 hover:text-emerald-600 font-bold">✕</button>
+                    </div>
+                </div>
+                <div class="w-full sm:w-auto flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-emerald-600 uppercase">Clasificación</label>
+                    <select id="qStatusFilter" onchange="window.renderQualityDashboard()" class="bg-white border border-emerald-200 rounded px-3 py-1.5 text-sm outline-none font-bold text-emerald-700">
+                        <option value="">Todas</option>
+                        <option value="verde">Óptimas (Verde)</option>
+                        <option value="roja">Poco Útiles (Roja)</option>
+                        <option value="vacia">Vacías (Gris)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="flex flex-col gap-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center items-center h-full">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Total Evaluadas</p>
+                        <p class="text-3xl font-bold text-slate-700" id="qKpiTotal">0</p>
+                        <p class="text-[9px] text-slate-400 mt-1">Contactos Efectivos (Humanos)</p>
+                    </div>
+                    <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-200 shadow-sm flex flex-col justify-center items-center h-full">
+                        <p class="text-[10px] font-bold text-emerald-600 uppercase">% Glosas Óptimas</p>
+                        <p class="text-3xl font-bold text-emerald-700" id="qKpiVerde">0%</p>
+                        <p class="text-[9px] text-emerald-600 mt-1">Aportan valor real</p>
+                    </div>
+                    <div class="bg-red-50/50 p-4 rounded-xl border border-red-200 shadow-sm flex flex-col justify-center items-center h-full">
+                        <p class="text-[10px] font-bold text-red-600 uppercase">Volumen Críticos</p>
+                        <p class="text-3xl font-bold text-red-700" id="qKpiCriticos">0</p>
+                        <p class="text-[9px] text-red-600 mt-1">Rojas + Vacías</p>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col">
+                    <h4 class="text-xs font-bold text-slate-500 uppercase mb-4 border-b pb-2">Distribución de Calidad</h4>
+                    <div class="flex-grow relative w-full min-h-[200px]">
+                        <canvas id="qualityPieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col w-full mt-2">
+                <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                    <h3 class="text-sm font-bold text-slate-700 uppercase"><i class="fas fa-users"></i> Resumen de Calidad por Ejecutivo</h3>
+                    <span class="text-[10px] text-slate-400">Clic en la fila para filtrar la tabla de abajo</span>
+                </div>
+                <div class="overflow-x-auto scroller w-full max-h-[300px]">
+                    <table class="w-full text-sm text-left border-collapse">
+                        <thead class="text-[10px] text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm font-bold">
+                            <tr>
+                                <th class="px-3 py-2 cursor-pointer hover:bg-slate-200" onclick="window.sortQualitySummary('name')">Ejecutivo <i class="fas fa-sort text-[8px] ml-1"></i></th>
+                                <th class="px-3 py-2 cursor-pointer hover:bg-slate-200 text-center" onclick="window.sortQualitySummary('total')">Total Eval. <i class="fas fa-sort text-[8px] ml-1"></i></th>
+                                <th class="px-3 py-2 cursor-pointer hover:bg-emerald-100 text-center text-emerald-600" onclick="window.sortQualitySummary('verde')">Óptimas (Verde) <i class="fas fa-sort text-[8px] ml-1"></i></th>
+                                <th class="px-3 py-2 cursor-pointer hover:bg-red-100 text-center text-red-600" onclick="window.sortQualitySummary('roja')">Poco Útiles (Roja) <i class="fas fa-sort text-[8px] ml-1"></i></th>
+                                <th class="px-3 py-2 cursor-pointer hover:bg-slate-200 text-center text-slate-600" onclick="window.sortQualitySummary('vacia')">Vacías (Gris) <i class="fas fa-sort text-[8px] ml-1"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody id="qAgentTableBody" class="divide-y divide-slate-100 text-slate-600 text-xs"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col w-full mt-4">
+                <div class="px-4 py-3 border-b border-slate-100 bg-emerald-50 flex justify-between items-center flex-wrap gap-2">
+                    <h3 class="text-sm font-bold text-emerald-800 uppercase"><i class="fas fa-search"></i> Auditoría de Glosas</h3>
+                    <span id="qRowCount" class="text-xs font-medium text-emerald-600 bg-white border border-emerald-200 px-2 py-1 rounded">0 reg</span>
+                </div>
+                <div class="overflow-x-auto scroller w-full max-h-[500px]">
+                    <table class="w-full text-sm text-left border-collapse min-w-[800px]">
+                        <thead class="text-[10px] text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm font-bold">
+                            <tr>
+                                <th class="px-3 py-2 cursor-pointer hover:bg-emerald-100" onclick="window.sortQuality('fecha')">Fecha y Hora <i class="fas fa-sort text-[8px] ml-1 text-slate-400"></i></th>
+                                <th class="px-3 py-2 cursor-pointer hover:bg-emerald-100" onclick="window.sortQuality('agente')">Ejecutivo <i class="fas fa-sort text-[8px] ml-1 text-slate-400"></i></th>
+                                <th class="px-3 py-2 cursor-pointer hover:bg-emerald-100" onclick="window.sortQuality('tipificacion')">Tipificación <i class="fas fa-sort text-[8px] ml-1 text-slate-400"></i></th>
+                                <th class="px-3 py-2 cursor-pointer hover:bg-emerald-100" onclick="window.sortQuality('observacion')">Observación (Texto) <i class="fas fa-sort text-[8px] ml-1 text-slate-400"></i></th>
+                                <th class="px-3 py-2 text-center cursor-pointer hover:bg-emerald-100" onclick="window.sortQuality('calidad')">Calidad <i class="fas fa-sort text-[8px] ml-1 text-slate-400"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody id="qualityTableBody" class="divide-y divide-slate-100 text-slate-600 text-xs"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
     </main>
 
@@ -371,10 +468,17 @@
     
     let filterDebounceTimer = null;
     let auxDebounceTimer = null;
+    let qualityDebounceTimer = null;
     
     let auxVisCols = { 'col-fecha':true, 'col-hora':true, 'col-agente':true, 'col-total':true, 'col-atend':true, 'col-noatend':true, 'col-tmo':true, 'col-hablado':true, 'col-contact':true, 'col-pacw':true };
     let auxColOrder = ['col-fecha', 'col-hora', 'col-agente', 'col-total', 'col-atend', 'col-noatend', 'col-tmo', 'col-hablado', 'col-contact', 'col-pacw'];
     let auxDragSrcEl = null;
+
+    let qSortCol = 'fecha';
+    let qSortAsc = -1;
+    
+    let qSummarySortCol = 'total';
+    let qSummarySortAsc = -1;
 
     const MANUAL_TEAMS = { "Luis Cataldo": ["Cristina Baron", "Cristobal Fernandez", "Angelica Galleguillos", "Paola Herrera", "Edith Ossandon", "Andreina Villalon"], "Angélica Ferrada": ["Diego Cea", "Carla Garay", "Yessenia Gonzalez", "Oscar Hidalgo", "Adrian Manzanilla"], "Carla Cabrera": ["Lesli Agudelo", "Miriam Bruges", "Maria Faria", "Johanna Herrera", "Lorena Rodriguez", "Jorge Yanez"], "Aracely Torres": ["Belfred Belis", "Saymar Paez", "Joanna Rojas", "Katya Caceres"] };
     const AGENT_IDS = { "adrian manzanilla": "CC0506", "andreina villalon": "CC1683", "carla garay": "CC5070", "cristina baron": "CC1815", "edith ossandon": "CC2762", "joanna rojas": "CC2846", "jorge yanez": "CC2467", "maria faria": "CC0851", "miriam bruges": "CC0928", "oscar hidalgo": "CC9827", "saymar paez": "CC1992", "yessenia gonzalez": "CC6869", "lorena rodriguez": "CC4346", "angelica galleguillos": "CC5251", "cristobal fernandez": "CC0315", "maria paz nunez": "CC5178", "diego cea": "CC7625", "johanna herrera": "CC7119", "lesli agudelo": "CC3118", "paola herrera": "CC3898", "belfred belis": "CC8219" };
@@ -393,7 +497,7 @@
         document.getElementById('statusMenu')?.classList.add('hidden');
         const si = document.getElementById('statusIndicator');
         if(si) { si.innerHTML = '<span class="text-orange-500">●</span> Manual'; si.className = "text-[10px] font-bold text-orange-600 border border-orange-200 bg-orange-50 px-2 py-1 rounded flex items-center gap-1 cursor-pointer hover:bg-orange-100 transition-colors shadow-sm"; }
-        document.getElementById('tabMainContent')?.classList.add('hidden'); document.getElementById('tabAuxContent')?.classList.add('hidden'); document.getElementById('tabNavigation')?.classList.add('hidden'); document.getElementById('errorBox')?.classList.add('hidden'); document.getElementById('configPanel')?.classList.add('hidden');
+        document.getElementById('tabMainContent')?.classList.add('hidden'); document.getElementById('tabAuxContent')?.classList.add('hidden'); document.getElementById('tabQualityContent')?.classList.add('hidden'); document.getElementById('tabNavigation')?.classList.add('hidden'); document.getElementById('errorBox')?.classList.add('hidden'); document.getElementById('configPanel')?.classList.add('hidden');
         document.getElementById('offlineZone')?.classList.remove('hidden');
         if(Swal.isVisible()) Swal.close();
     }
@@ -443,6 +547,9 @@
             let iOb = headers.findIndex(h => h === 'observacion'); 
             if(iOb === -1) iOb = 20; 
             let iTel = headers.findIndex(h => h.includes('telefono') || h.includes('tel'));
+            let iNom = headers.findIndex(h => h === 'nombre'); 
+            let iTut = headers.findIndex(h => h === 'tercero/tutor' || h === 'tutor');
+            let iTip = headers.findIndex(h => h === 'tipificacion');
 
             let parsed = [];
             for(let i=hIdx+1; i<rowsAux.length; i++) {
@@ -465,7 +572,10 @@
                     tiempo_de_espera: iTe >= 0 ? (row[iTe] ?? "") : "",
                     tiempo_de_llamada: iTl >= 0 ? (row[iTl] ?? "") : "",
                     observacion: iOb >= 0 ? (row[iOb] ?? "") : "",
-                    telefono: iTel >= 0 ? (row[iTel] ?? "") : ""
+                    telefono: iTel >= 0 ? (row[iTel] ?? "") : "",
+                    nombre: iNom >= 0 ? (row[iNom] ?? "") : "",
+                    tutor: iTut >= 0 ? (row[iTut] ?? "") : "",
+                    tipificacion: iTip >= 0 ? (row[iTip] ?? "") : ""
                 });
             }
             RAW_DATA_CACHE.aux = parsed;
@@ -528,6 +638,9 @@
                 let iOb = headers.findIndex(h => h === 'observacion'); 
                 if(iOb === -1) iOb = 20; 
                 let iTel = headers.findIndex(h => h.includes('telefono') || h.includes('tel'));
+                let iNom = headers.findIndex(h => h === 'nombre'); 
+                let iTut = headers.findIndex(h => h === 'tercero/tutor' || h === 'tutor');
+                let iTip = headers.findIndex(h => h === 'tipificacion');
 
                 if(iAg === -1) throw new Error("No se encontró la columna exacta 'Agente' en el archivo auxiliar.");
 
@@ -543,7 +656,8 @@
                         agente: agRaw, _a: mappedAg, _a_low: mappedAg.toLowerCase(), fecha: fe, _d: dt.date, _t: dt.time,
                         estado: iEs >= 0 ? (row[iEs] ?? "") : "", sentido: iSe >= 0 ? (row[iSe] ?? "") : "",
                         tiempo_de_espera: iTe >= 0 ? (row[iTe] ?? "") : "", tiempo_de_llamada: iTl >= 0 ? (row[iTl] ?? "") : "",
-                        observacion: iOb >= 0 ? (row[iOb] ?? "") : "", telefono: iTel >= 0 ? (row[iTel] ?? "") : ""
+                        observacion: iOb >= 0 ? (row[iOb] ?? "") : "", telefono: iTel >= 0 ? (row[iTel] ?? "") : "",
+                        nombre: iNom >= 0 ? (row[iNom] ?? "") : "", tutor: iTut >= 0 ? (row[iTut] ?? "") : "", tipificacion: iTip >= 0 ? (row[iTip] ?? "") : ""
                     });
                 }
                 RAW_DATA_CACHE.aux = parsed;
@@ -597,10 +711,29 @@
     function getVal(row, keywords) { const keys = Object.keys(row); const k = keys.find(key => keywords.some(kw => key.toLowerCase() === kw.toLowerCase() || key.toLowerCase().includes(kw.toLowerCase()))); return k ? row[k] : undefined; }
     function extractTime(str) { let t = String(str).trim(); if(t.includes(' ')) t = t.split(' ').pop(); else if(t.includes('T')) t = t.split('T')[1]; let p = t.split(':'); if(p.length >= 2) return p[0].padStart(2,'0') + ':' + p[1].padStart(2,'0'); return t.substr(0,5); }
 
+    window.evaluateQuality = function(obs, tel, tip, nom, tut) {
+        if (!obs) return 'vacia';
+        let o = String(obs).trim().toLowerCase();
+        let t = String(tel).trim().toLowerCase();
+        let tp = String(tip).trim().toLowerCase();
+        let n = String(nom).trim().toLowerCase();
+        let tu = String(tut).trim().toLowerCase();
+
+        if (o === '' || o === 'null' || o === 'undefined' || o === 'n/a' || o === '-' || o === '0') return 'vacia';
+        if (o === `${t} ${tp}`.trim() || o === `${t} ${tp}`) return 'vacia';
+
+        if (o.length < 20) return 'roja';
+        if (tp && o === tp) return 'roja';
+        if (n && o === n) return 'roja';
+        if (tu && o === tu) return 'roja';
+        if (/(.)\1{4,}/.test(o)) return 'roja'; 
+        if (/^(asd)+$/.test(o) || /^(qwe)+$/.test(o)) return 'roja';
+
+        return 'verde';
+    };
+
     window.analyzeData = function(detailRows, stateRows, digitalRows, resetUI = true) {
         UNIQUE_AGENTS.clear(); const shiftMap = {}; const supervisorMap = {}; 
-        
-        // PRD: EXTRACT 'EN LINEA' FROM STATES SHEET
         if (stateRows) { 
             stateRows.forEach(row => { 
                 const a = getVal(row, ['agente','nombre']); const f = getVal(row, ['fecha','dia']); 
@@ -620,7 +753,6 @@
         const groups = {}; if (detailRows) { detailRows.forEach(row => { const a=getVal(row, ['agente']), f=getVal(row, ['fecha']); if(!a) return; const name=cleanName(a), date=normalizeDate(f), key=`${name}|${date}`; UNIQUE_AGENTS.add(name); if(!groups[key]) groups[key]={agent:name, date:date, regs:[]}; groups[key].regs.push({ estado:String(getVal(row,['estado'])||"").toLowerCase(), inicio:getVal(row,['inicio']), tiempo:getVal(row,['tiempo']) }); }); }
         
         let allValidDates = new Set();
-        
         const groupedAux = {}; 
         if(RAW_DATA_CACHE.aux) { 
             RAW_DATA_CACHE.aux.forEach(r => { 
@@ -676,8 +808,10 @@
         if(resetUI && sortedDates.length > 0) { 
             minDate = sortedDates[0]; maxDate = sortedDates[sortedDates.length-1];
             window.setFullRange(); 
-            const axD = document.getElementById('auxDate'); if(axD && !axD.value) axD.value = maxDate;
-        } else window.applyFilters();
+        } else {
+            window.applyFilters();
+            window.renderQualityDashboard();
+        }
         
         const a1 = document.getElementById('cmpA1'), a2 = document.getElementById('cmpA2'), a3 = document.getElementById('cmpA3');
         if(a1 && a2 && a3 && a1.options.length <= 1) {
@@ -687,8 +821,23 @@
 
     window.debouncedApplyFilters = function() { clearTimeout(filterDebounceTimer); filterDebounceTimer = setTimeout(() => { window.applyFilters(); }, 300); }
     window.debouncedRenderAux = function() { clearTimeout(auxDebounceTimer); auxDebounceTimer = setTimeout(() => { window.renderAuxDashboard(); }, 300); }
+    window.debouncedRenderQuality = function() { clearTimeout(qualityDebounceTimer); qualityDebounceTimer = setTimeout(() => { window.renderQualityDashboard(); }, 300); }
 
-    window.setFullRange = function() { if(minDate) { const dS = document.getElementById('dateStart'); const dE = document.getElementById('dateEnd'); if(dS) dS.value = minDate; if(dE) dE.value = maxDate; window.applyFilters(); } }
+    window.setFullRange = function() { 
+        if(minDate) { 
+            const dS = document.getElementById('dateStart'); const dE = document.getElementById('dateEnd'); 
+            const axD = document.getElementById('auxDate');
+            const qS = document.getElementById('qDateStart'); const qE = document.getElementById('qDateEnd'); 
+            
+            if(dS) dS.value = minDate; if(dE) dE.value = maxDate; 
+            if(axD && !axD.value) axD.value = maxDate;
+            if(qS) qS.value = minDate; if(qE) qE.value = maxDate; 
+            
+            window.applyFilters(); 
+            window.renderQualityDashboard();
+        } 
+    }
+    
     window.clearFilters = function() { const a=document.getElementById('agentSearch'), s=document.getElementById('supervisorFilter'), fS=document.getElementById('filterSentido'), fE=document.getElementById('filterEstadoCall'); if(a)a.value=''; if(s)s.value=''; if(fS)fS.value=''; if(fE)fE.value=''; SHOW_ONLY_FEEDBACK = false; document.getElementById('btnToggleFeed')?.classList.remove('btn-active'); window.setFullRange(); }
     window.clearAgentSearch = function() { const a = document.getElementById('agentSearch'); if(a) { a.value = ''; window.applyFilters(); } }
     window.toggleFeedbackFilter = function() { SHOW_ONLY_FEEDBACK = !SHOW_ONLY_FEEDBACK; const btn = document.getElementById('btnToggleFeed'); if(SHOW_ONLY_FEEDBACK) btn?.classList.add('btn-active'); else btn?.classList.remove('btn-active'); window.applyFilters(); }
@@ -859,18 +1008,23 @@
     window.sort = function(key) { if(sortCol === key) sortAsc *= -1; else { sortCol = key; sortAsc = 1; } FILTERED_DATA.sort((a,b) => { let vA=key==='_totales'?a.c_calls+(a.c_no_atendidas||0):a[key], vB=key==='_totales'?b.c_calls+(b.c_no_atendidas||0):b[key]; if(typeof vA==='string'){vA=vA.toLowerCase();vB=vB.toLowerCase();} if(vA < vB) return -1 * sortAsc; if(vA > vB) return 1 * sortAsc; return 0; }); window.renderTable(); }
     
     window.switchTab = function(t) { 
-        const mC = document.getElementById('tabMainContent'), aC = document.getElementById('tabAuxContent');
-        const mB = document.getElementById('tabBtnMain'), aB = document.getElementById('tabBtnAux');
-        if(t === 'main') {
-            mC?.classList.remove('hidden'); aC?.classList.add('hidden');
-            mB?.classList.add('border-blue-600', 'text-blue-600'); mB?.classList.remove('border-transparent', 'text-slate-500');
-            aB?.classList.remove('border-purple-600', 'text-purple-600'); aB?.classList.add('border-transparent', 'text-slate-500');
-        } else {
-            mC?.classList.add('hidden'); aC?.classList.remove('hidden');
-            aB?.classList.add('border-purple-600', 'text-purple-600'); aB?.classList.remove('border-transparent', 'text-slate-500');
-            mB?.classList.remove('border-blue-600', 'text-blue-600'); mB?.classList.add('border-transparent', 'text-slate-500');
-            window.renderAuxDashboard();
-        }
+        const tabs = ['main', 'aux', 'quality'];
+        const colors = { main: 'blue', aux: 'purple', quality: 'emerald' };
+        tabs.forEach(tab => {
+            document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}Content`)?.classList.toggle('hidden', t !== tab);
+            const btn = document.getElementById(`tabBtn${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+            if(btn) {
+                if(t === tab) {
+                    btn.classList.add(`border-${colors[tab]}-600`, `text-${colors[tab]}-600`);
+                    btn.classList.remove('border-transparent', 'text-slate-500');
+                } else {
+                    btn.classList.remove(`border-${colors[tab]}-600`, `text-${colors[tab]}-600`);
+                    btn.classList.add('border-transparent', 'text-slate-500');
+                }
+            }
+        });
+        if(t === 'aux') window.renderAuxDashboard();
+        if(t === 'quality') window.renderQualityDashboard();
     }
     
     window.loadMoreRows = function() { VISIBLE_ROWS += 20; window.renderTable(); }
@@ -982,8 +1136,6 @@
         }
         window.updateAuxCompareChart();
     }
-
-    window.exportAuxTableOnly = function() { const tb = document.getElementById('auxDataTbl'); const ws = XLSX.utils.table_to_sheet(tb); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Auxiliar"); XLSX.writeFile(wb, "Reporte_Auxiliar.xlsx"); }
 
     window.updateAuxCompareChart = function() {
         const a1 = document.getElementById('cmpA1')?.value, a2 = document.getElementById('cmpA2')?.value, a3 = document.getElementById('cmpA3')?.value, m = document.getElementById('cmpMetric')?.value;
@@ -1251,6 +1403,174 @@
     window.closeConfig = function() { document.getElementById('configPanel').classList.add('hidden'); if(GLOBAL_DATA.length===0 && !isOfflineMode) document.getElementById('offlineZone').classList.remove('hidden'); }
     window.showConfig = function() { document.getElementById('configPanel').classList.remove('hidden'); }
     window.saveConfig = function() { const u=document.getElementById('apiUrlInput').value.trim(); if(!u) return; localStorage.setItem('cc_dashboard_api_url',u); window.closeConfig(); window.connectToSheet(u); }
+
+    // --- SORT QUALITY LOGIC ---
+    window.sortQuality = function(col) {
+        if(qSortCol === col) qSortAsc *= -1;
+        else { qSortCol = col; qSortAsc = 1; }
+        window.renderQualityDashboard();
+    }
+    
+    window.sortQualitySummary = function(col) {
+        if(qSummarySortCol === col) qSummarySortAsc *= -1;
+        else { qSummarySortCol = col; qSummarySortAsc = -1; }
+        window.renderQualityDashboard();
+    }
+    
+    // --- TOGGLE AGENT IN QUALITY DASH ---
+    window.toggleQualityAgent = function(name) {
+        const input = document.getElementById('qAgentSearch');
+        if(input.value.toLowerCase() === name.toLowerCase()) {
+            input.value = ''; 
+        } else {
+            input.value = name; 
+        }
+        window.renderQualityDashboard();
+    }
+
+    // --- V64/V66/V67: DASHBOARD DE CALIDAD ---
+    window.renderQualityDashboard = function() {
+        if(!RAW_DATA_CACHE.aux || !RAW_DATA_CACHE.aux.length) return;
+        const dS = document.getElementById('qDateStart')?.value || '';
+        const dE = document.getElementById('qDateEnd')?.value || '';
+        const agentInput = (document.getElementById('qAgentSearch')?.value || '').toLowerCase();
+        const stat = document.getElementById('qStatusFilter')?.value || '';
+
+        const excludedTips = [
+            "no contesta", "buzon de voz", "n° no existe", "no existe", 
+            "volver a llamar", "corta llamado", "n° equivocado", "corta llamada", 
+            "numero equivocado", "sin n° valido", "telefono apagado"
+        ];
+
+        // 1. Filtrar atendidas y QUITAR BOTS (V66) + EXCLUIR NO CONTACTADOS (V67)
+        let baseQ = RAW_DATA_CACHE.aux.filter(r => {
+            const st = String(r.estado).toLowerCase().trim();
+            const tL = timeToSec(r.tiempo_de_llamada);
+            const isNoAt = st.includes('no-atendida') || st.includes('no atendida') || st.includes('abandonada') || st.includes('falla');
+            const isAt = !isNoAt && (st.includes('atendida') || st.includes('conectad') || st === 'ok' || st === '' || tL > 0);
+            if (!isAt) return false;
+
+            const isBot = r._a_low.includes('agente ivr') || r._a_low.includes('agente ia') || r._a_low.startsWith('bot');
+            if (isBot) return false;
+
+            if (dS && r._d < dS) return false;
+            if (dE && r._d > dE) return false;
+
+            // Filtro V67: Excluir Tipificaciones fallidas
+            const tipNorm = norm(r.tipificacion);
+            if (excludedTips.some(t => tipNorm.includes(t))) return false;
+            
+            return true;
+        });
+
+        // 2. Calcular estados de calidad
+        let counts = { verde: 0, roja: 0, vacia: 0 };
+        let agentStats = {};
+
+        baseQ.forEach(r => {
+            r._qStatus = window.evaluateQuality(r.observacion, r.telefono, r.tipificacion, r.nombre, r.tutor);
+            counts[r._qStatus]++;
+            
+            if(!agentStats[r._a]) {
+                agentStats[r._a] = { name: r._a, total: 0, verde: 0, roja: 0, vacia: 0 };
+            }
+            agentStats[r._a].total++;
+            agentStats[r._a][r._qStatus]++;
+        });
+
+        let total = counts.verde + counts.roja + counts.vacia;
+        let pctVerde = total > 0 ? (counts.verde / total * 100).toFixed(1) : 0;
+        let criticos = counts.roja + counts.vacia;
+
+        const elTotal = document.getElementById('qKpiTotal'); if(elTotal) elTotal.innerText = total;
+        const elVerde = document.getElementById('qKpiVerde'); if(elVerde) elVerde.innerText = pctVerde + '%';
+        const elCrit = document.getElementById('qKpiCriticos'); if(elCrit) elCrit.innerText = criticos;
+
+        // Render Pie Chart
+        const canvas = document.getElementById('qualityPieChart');
+        if (canvas) {
+            if(charts['qualityPie']) charts['qualityPie'].destroy();
+            charts['qualityPie'] = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Óptimas (Verde)', 'Poco Útiles (Rojo)', 'Vacías (Gris)'],
+                    datasets: [{
+                        data: [counts.verde, counts.roja, counts.vacia],
+                        backgroundColor: ['#10b981', '#ef4444', '#94a3b8'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+            });
+        }
+
+        // Render Agent Summary Table (V66 Replace Grid)
+        let agentList = Object.values(agentStats);
+        agentList.sort((a, b) => {
+            let vA = a[qSummarySortCol], vB = b[qSummarySortCol];
+            if(qSummarySortCol === 'name') { vA = vA.toLowerCase(); vB = vB.toLowerCase(); }
+            if(vA < vB) return -1 * qSummarySortAsc;
+            if(vA > vB) return 1 * qSummarySortAsc;
+            return 0;
+        });
+
+        const tbSummary = document.getElementById('qAgentTableBody');
+        if(tbSummary) {
+            tbSummary.innerHTML = agentList.map(ag => {
+                let isSelected = (agentInput === ag.name.toLowerCase());
+                let rowClass = isSelected ? 'bg-emerald-50 ring-1 ring-emerald-500 shadow-sm z-10 relative' : 'hover:bg-slate-50 cursor-pointer';
+                return `<tr class="border-b border-slate-100 transition-colors ${rowClass}" onclick="window.toggleQualityAgent('${ag.name}')">
+                    <td class="px-3 py-2 font-bold text-slate-700 truncate max-w-[200px]" title="${ag.name}">${ag.name}</td>
+                    <td class="px-3 py-2 text-center font-bold">${ag.total}</td>
+                    <td class="px-3 py-2 text-center font-bold text-emerald-600 bg-emerald-50/30">${ag.verde}</td>
+                    <td class="px-3 py-2 text-center font-bold text-red-600 bg-red-50/30">${ag.roja}</td>
+                    <td class="px-3 py-2 text-center font-bold text-slate-500 bg-slate-50">${ag.vacia}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        // Render Table (with active filters & sort)
+        let tableQ = baseQ.filter(r => {
+            if(agentInput && !r._a_low.includes(agentInput)) return false;
+            if(stat && r._qStatus !== stat) return false;
+            return true;
+        });
+
+        tableQ.sort((a, b) => {
+            let vA, vB;
+            if(qSortCol === 'fecha') { vA = a._d + ' ' + a._t; vB = b._d + ' ' + b._t; }
+            else if(qSortCol === 'agente') { vA = a._a_low; vB = b._a_low; }
+            else if(qSortCol === 'tipificacion') { vA = (a.tipificacion||'').toLowerCase(); vB = (b.tipificacion||'').toLowerCase(); }
+            else if(qSortCol === 'calidad') { vA = a._qStatus; vB = b._qStatus; }
+            else { vA = (a.observacion||'').toLowerCase(); vB = (b.observacion||'').toLowerCase(); }
+            
+            if(vA < vB) return -1 * qSortAsc;
+            if(vA > vB) return 1 * qSortAsc;
+            return 0;
+        });
+
+        const rc = document.getElementById('qRowCount'); if(rc) rc.innerText = tableQ.length + ' reg';
+        const tb = document.getElementById('qualityTableBody');
+        
+        if(tb) {
+            tb.innerHTML = tableQ.slice(0, 200).map(r => {
+                let badge = '';
+                if(r._qStatus === 'verde') badge = '<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-[10px] font-bold border border-emerald-200">ÓPTIMA</span>';
+                else if(r._qStatus === 'roja') badge = '<span class="bg-red-100 text-red-800 px-2 py-1 rounded text-[10px] font-bold border border-red-200">POCO ÚTIL</span>';
+                else badge = '<span class="bg-slate-200 text-slate-700 px-2 py-1 rounded text-[10px] font-bold border border-slate-300">VACÍA</span>';
+
+                let safeObs = String(r.observacion || '').replace(/"/g, '&quot;');
+                return `<tr class="border-b border-slate-100 hover:bg-emerald-50/50">
+                    <td class="px-3 py-2 font-mono whitespace-nowrap">${r._d} <span class="text-slate-400">${r._t}</span></td>
+                    <td class="px-3 py-2 font-bold text-slate-700">${r._a}</td>
+                    <td class="px-3 py-2 text-[10px] uppercase text-slate-500">${r.tipificacion || '-'}</td>
+                    <td class="px-3 py-2 text-xs text-slate-600 max-w-md truncate" title="${safeObs}">${r.observacion || '-'}</td>
+                    <td class="px-3 py-2 text-center">${badge}</td>
+                </tr>`;
+            }).join('');
+            if(tableQ.length > 200) tb.innerHTML += `<tr><td colspan="5" class="text-center py-2 text-xs text-slate-400 bg-slate-50">Mostrando 200 de ${tableQ.length} registros</td></tr>`;
+        }
+    }
 </script>
 </body>
 </html>
