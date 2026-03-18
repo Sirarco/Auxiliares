@@ -369,6 +369,22 @@
                     </div>
                 </div>
                 <div class="w-full sm:w-auto flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-emerald-600 uppercase">Sentido</label>
+                    <select id="qSentido" onchange="window.renderQualityDashboard()" class="bg-white border border-emerald-200 rounded px-3 py-1.5 text-sm outline-none font-bold text-emerald-700">
+                        <option value="">Todos</option>
+                        <option value="entrante">Entrante</option>
+                        <option value="saliente">Saliente</option>
+                    </select>
+                </div>
+                <div class="w-full sm:w-auto flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-emerald-600 uppercase">Estado</label>
+                    <select id="qEstado" onchange="window.renderQualityDashboard()" class="bg-white border border-emerald-200 rounded px-3 py-1.5 text-sm outline-none font-bold text-emerald-700">
+                        <option value="atendida">Atendidas</option>
+                        <option value="no-atendida">No Atendidas</option>
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+                <div class="w-full sm:w-auto flex flex-col gap-1">
                     <label class="text-[10px] font-bold text-emerald-600 uppercase">Clasificación</label>
                     <select id="qStatusFilter" onchange="window.renderQualityDashboard()" class="bg-white border border-emerald-200 rounded px-3 py-1.5 text-sm outline-none font-bold text-emerald-700">
                         <option value="">Todas</option>
@@ -377,14 +393,22 @@
                         <option value="vacia">Vacías (Gris)</option>
                     </select>
                 </div>
+                <div class="w-full sm:w-auto flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-emerald-600 uppercase" title="Minutos Mínimos">Dur. Min</label>
+                    <input type="number" id="qMinDur" oninput="window.debouncedRenderQuality()" min="0" step="0.1" placeholder="Ej: 1" class="w-20 bg-white border border-emerald-200 rounded px-2 py-1.5 text-sm outline-none font-bold text-slate-700">
+                </div>
+                <div class="w-full sm:w-auto flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-emerald-600 uppercase" title="Minutos Máximos">Dur. Max</label>
+                    <input type="number" id="qMaxDur" oninput="window.debouncedRenderQuality()" min="0" step="0.1" placeholder="Ej: 15" class="w-20 bg-white border border-emerald-200 rounded px-2 py-1.5 text-sm outline-none font-bold text-slate-700">
+                </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="flex flex-col gap-4">
                     <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center items-center h-full">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">Total Evaluadas</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Total En Rango</p>
                         <p class="text-3xl font-bold text-slate-700" id="qKpiTotal">0</p>
-                        <p class="text-[9px] text-slate-400 mt-1">Contactos Efectivos (Humanos)</p>
+                        <p class="text-[9px] text-slate-400 mt-1">Llamadas (Filtro Aplicado)</p>
                     </div>
                     <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-200 shadow-sm flex flex-col justify-center items-center h-full">
                         <p class="text-[10px] font-bold text-emerald-600 uppercase">% Glosas Óptimas</p>
@@ -405,31 +429,62 @@
                 </div>
             </div>
             
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col w-full mt-2">
-                <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                    <h3 class="text-sm font-bold text-slate-700 uppercase"><i class="fas fa-users"></i> Resumen de Calidad por Ejecutivo</h3>
-                    <span class="text-[10px] text-slate-400">Clic en la fila para filtrar la tabla de abajo</span>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-2">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col w-full">
+                    <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-700 uppercase"><i class="fas fa-users"></i> Calidad por Ejecutivo</h3>
+                            <span class="text-[9px] text-slate-400">Clic en fila filtra abajo</span>
+                        </div>
+                        <button onclick="window.exportQualitySummary()" class="text-emerald-600 hover:text-emerald-700 text-[10px] font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-200"><i class="fas fa-file-excel"></i> Descargar</button>
+                    </div>
+                    <div class="overflow-y-auto scroller w-full max-h-[300px]">
+                        <table class="w-full text-sm text-left border-collapse">
+                            <thead class="text-[10px] text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm font-bold">
+                                <tr>
+                                    <th class="px-3 py-2 cursor-pointer hover:bg-slate-200" onclick="window.sortQualitySummary('name')">Ejecutivo <i class="fas fa-sort text-[8px] ml-1"></i></th>
+                                    <th class="px-3 py-2 cursor-pointer hover:bg-slate-200 text-center" onclick="window.sortQualitySummary('total')">Rango <i class="fas fa-sort text-[8px] ml-1"></i></th>
+                                    <th class="px-3 py-2 cursor-pointer hover:bg-emerald-100 text-center text-emerald-600" onclick="window.sortQualitySummary('verde')">Óptima <i class="fas fa-sort text-[8px] ml-1"></i></th>
+                                    <th class="px-3 py-2 cursor-pointer hover:bg-red-100 text-center text-red-600" onclick="window.sortQualitySummary('roja')">Inútil <i class="fas fa-sort text-[8px] ml-1"></i></th>
+                                    <th class="px-3 py-2 cursor-pointer hover:bg-slate-200 text-center text-slate-600" onclick="window.sortQualitySummary('vacia')">Vacía <i class="fas fa-sort text-[8px] ml-1"></i></th>
+                                </tr>
+                            </thead>
+                            <tbody id="qAgentTableBody" class="divide-y divide-slate-100 text-slate-600 text-xs"></tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="overflow-x-auto scroller w-full max-h-[300px]">
-                    <table class="w-full text-sm text-left border-collapse">
-                        <thead class="text-[10px] text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm font-bold">
-                            <tr>
-                                <th class="px-3 py-2 cursor-pointer hover:bg-slate-200" onclick="window.sortQualitySummary('name')">Ejecutivo <i class="fas fa-sort text-[8px] ml-1"></i></th>
-                                <th class="px-3 py-2 cursor-pointer hover:bg-slate-200 text-center" onclick="window.sortQualitySummary('total')">Total Eval. <i class="fas fa-sort text-[8px] ml-1"></i></th>
-                                <th class="px-3 py-2 cursor-pointer hover:bg-emerald-100 text-center text-emerald-600" onclick="window.sortQualitySummary('verde')">Óptimas (Verde) <i class="fas fa-sort text-[8px] ml-1"></i></th>
-                                <th class="px-3 py-2 cursor-pointer hover:bg-red-100 text-center text-red-600" onclick="window.sortQualitySummary('roja')">Poco Útiles (Roja) <i class="fas fa-sort text-[8px] ml-1"></i></th>
-                                <th class="px-3 py-2 cursor-pointer hover:bg-slate-200 text-center text-slate-600" onclick="window.sortQualitySummary('vacia')">Vacías (Gris) <i class="fas fa-sort text-[8px] ml-1"></i></th>
-                            </tr>
-                        </thead>
-                        <tbody id="qAgentTableBody" class="divide-y divide-slate-100 text-slate-600 text-xs"></tbody>
-                    </table>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col w-full">
+                    <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-700 uppercase"><i class="fas fa-clock"></i> Tiempos por Ejecutivo</h3>
+                            <span class="text-[9px] text-slate-400">Clic en fila filtra abajo</span>
+                        </div>
+                        <button onclick="window.exportDurationSummary()" class="text-blue-600 hover:text-blue-700 text-[10px] font-bold bg-blue-50 px-2 py-1 rounded border border-blue-200"><i class="fas fa-file-excel"></i> Descargar</button>
+                    </div>
+                    <div class="overflow-y-auto scroller w-full max-h-[300px]">
+                        <table class="w-full text-sm text-left border-collapse">
+                            <thead class="text-[10px] text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm font-bold">
+<tr>
+                                    <th class="px-3 py-2 cursor-pointer hover:bg-slate-200" onclick="window.sortDurationSummary('name')">Ejecutivo <i class="fas fa-sort text-[8px] ml-1"></i></th>
+                                    <th class="px-3 py-2 cursor-pointer hover:bg-slate-200 text-center" title="Total del periodo filtrado" onclick="window.sortDurationSummary('total')">Totales <i class="fas fa-sort text-[8px] ml-1"></i></th>
+                                    <th class="px-3 py-2 cursor-pointer hover:bg-blue-100 text-center text-blue-600" title="Cumplen Min/Max Minutos" onclick="window.sortDurationSummary('rango')">En Rango <i class="fas fa-sort text-[8px] ml-1"></i></th>
+                                    <th class="px-3 py-2 cursor-pointer hover:bg-slate-200 text-center" onclick="window.sortDurationSummary('porcentaje')">% Rango <i class="fas fa-sort text-[8px] ml-1"></i></th>
+                                </tr>
+                            </thead>
+                            <tbody id="qDurationTableBody" class="divide-y divide-slate-100 text-slate-600 text-xs"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col w-full mt-4">
                 <div class="px-4 py-3 border-b border-slate-100 bg-emerald-50 flex justify-between items-center flex-wrap gap-2">
-                    <h3 class="text-sm font-bold text-emerald-800 uppercase"><i class="fas fa-search"></i> Auditoría de Glosas</h3>
-                    <span id="qRowCount" class="text-xs font-medium text-emerald-600 bg-white border border-emerald-200 px-2 py-1 rounded">0 reg</span>
+                    <h3 class="text-sm font-bold text-emerald-800 uppercase"><i class="fas fa-search"></i> Auditoría de Glosas Detallada</h3>
+                    <div class="flex items-center gap-2">
+                        <span id="qRowCount" class="text-xs font-medium text-emerald-600 bg-white border border-emerald-200 px-2 py-1 rounded">0 reg</span>
+                        <button onclick="window.exportQualityDetails()" class="text-emerald-600 hover:text-emerald-700 text-[10px] font-bold bg-white px-2 py-1 rounded border border-emerald-200 shadow-sm"><i class="fas fa-file-excel"></i> Descargar Total</button>
+                    </div>
                 </div>
                 <div class="overflow-x-auto scroller w-full max-h-[500px]">
                     <table class="w-full text-sm text-left border-collapse min-w-[800px]">
@@ -437,6 +492,7 @@
                             <tr>
                                 <th class="px-3 py-2 cursor-pointer hover:bg-emerald-100" onclick="window.sortQuality('fecha')">Fecha y Hora <i class="fas fa-sort text-[8px] ml-1 text-slate-400"></i></th>
                                 <th class="px-3 py-2 cursor-pointer hover:bg-emerald-100" onclick="window.sortQuality('agente')">Ejecutivo <i class="fas fa-sort text-[8px] ml-1 text-slate-400"></i></th>
+                                <th class="px-3 py-2 cursor-pointer hover:bg-emerald-100" onclick="window.sortQuality('duracion')">Duración <i class="fas fa-sort text-[8px] ml-1 text-slate-400"></i></th>
                                 <th class="px-3 py-2 cursor-pointer hover:bg-emerald-100" onclick="window.sortQuality('tipificacion')">Tipificación <i class="fas fa-sort text-[8px] ml-1 text-slate-400"></i></th>
                                 <th class="px-3 py-2 cursor-pointer hover:bg-emerald-100" onclick="window.sortQuality('observacion')">Observación (Texto) <i class="fas fa-sort text-[8px] ml-1 text-slate-400"></i></th>
                                 <th class="px-3 py-2 text-center cursor-pointer hover:bg-emerald-100" onclick="window.sortQuality('calidad')">Calidad <i class="fas fa-sort text-[8px] ml-1 text-slate-400"></i></th>
@@ -476,9 +532,15 @@
 
     let qSortCol = 'fecha';
     let qSortAsc = -1;
-    
     let qSummarySortCol = 'total';
     let qSummarySortAsc = -1;
+let qDurSortCol = 'total';
+    let qDurSortAsc = -1;
+
+    // Excel Export Data References
+    window.currentQualityData = [];
+    window.currentQualitySummaryData = [];
+    window.currentDurationSummaryData = [];
 
     const MANUAL_TEAMS = { "Luis Cataldo": ["Cristina Baron", "Cristobal Fernandez", "Angelica Galleguillos", "Paola Herrera", "Edith Ossandon", "Andreina Villalon"], "Angélica Ferrada": ["Diego Cea", "Carla Garay", "Yessenia Gonzalez", "Oscar Hidalgo", "Adrian Manzanilla"], "Carla Cabrera": ["Lesli Agudelo", "Miriam Bruges", "Maria Faria", "Johanna Herrera", "Lorena Rodriguez", "Jorge Yanez"], "Aracely Torres": ["Belfred Belis", "Saymar Paez", "Joanna Rojas", "Katya Caceres"] };
     const AGENT_IDS = { "adrian manzanilla": "CC0506", "andreina villalon": "CC1683", "carla garay": "CC5070", "cristina baron": "CC1815", "edith ossandon": "CC2762", "joanna rojas": "CC2846", "jorge yanez": "CC2467", "maria faria": "CC0851", "miriam bruges": "CC0928", "oscar hidalgo": "CC9827", "saymar paez": "CC1992", "yessenia gonzalez": "CC6869", "lorena rodriguez": "CC4346", "angelica galleguillos": "CC5251", "cristobal fernandez": "CC0315", "maria paz nunez": "CC5178", "diego cea": "CC7625", "johanna herrera": "CC7119", "lesli agudelo": "CC3118", "paola herrera": "CC3898", "belfred belis": "CC8219" };
@@ -838,7 +900,18 @@
         } 
     }
     
-    window.clearFilters = function() { const a=document.getElementById('agentSearch'), s=document.getElementById('supervisorFilter'), fS=document.getElementById('filterSentido'), fE=document.getElementById('filterEstadoCall'); if(a)a.value=''; if(s)s.value=''; if(fS)fS.value=''; if(fE)fE.value=''; SHOW_ONLY_FEEDBACK = false; document.getElementById('btnToggleFeed')?.classList.remove('btn-active'); window.setFullRange(); }
+    window.clearFilters = function() { 
+        const a=document.getElementById('agentSearch'), s=document.getElementById('supervisorFilter'), fS=document.getElementById('filterSentido'), fE=document.getElementById('filterEstadoCall'); 
+        if(a)a.value=''; if(s)s.value=''; if(fS)fS.value=''; if(fE)fE.value=''; 
+        SHOW_ONLY_FEEDBACK = false; document.getElementById('btnToggleFeed')?.classList.remove('btn-active'); 
+        
+        // V68: Clear Quality Filters
+        const qa = document.getElementById('qAgentSearch'), qs = document.getElementById('qSentido'), qe = document.getElementById('qEstado'), qc = document.getElementById('qStatusFilter'), qmin = document.getElementById('qMinDur'), qmax = document.getElementById('qMaxDur');
+        if(qa)qa.value=''; if(qs)qs.value=''; if(qe)qe.value='atendida'; if(qc)qc.value=''; if(qmin)qmin.value=''; if(qmax)qmax.value='';
+        
+        window.setFullRange(); 
+    }
+    
     window.clearAgentSearch = function() { const a = document.getElementById('agentSearch'); if(a) { a.value = ''; window.applyFilters(); } }
     window.toggleFeedbackFilter = function() { SHOW_ONLY_FEEDBACK = !SHOW_ONLY_FEEDBACK; const btn = document.getElementById('btnToggleFeed'); if(SHOW_ONLY_FEEDBACK) btn?.classList.add('btn-active'); else btn?.classList.remove('btn-active'); window.applyFilters(); }
     window.setAgentFilter = function(name) { const a = document.getElementById('agentSearch'); if(a) { a.value = name; window.applyFilters(); } }
@@ -1188,7 +1261,7 @@
         });
     }
 
-    // Modal Triggers
+    // --- Modal Triggers ---
     window.startRecordingCountdown = function() {
         let count = 3; const overlay = document.getElementById('countdownOverlay'); overlay.innerText = count; overlay.classList.remove('hidden'); document.getElementById('btnRecord').disabled = true;
         recordInterval = setInterval(() => { count--; if(count > 0) { overlay.innerText = count; } else { clearInterval(recordInterval); overlay.classList.add('hidden'); window.startRecording(); } }, 1000);
@@ -1416,7 +1489,11 @@
         else { qSummarySortCol = col; qSummarySortAsc = -1; }
         window.renderQualityDashboard();
     }
-    
+    window.sortDurationSummary = function(col) {
+        if(qDurSortCol === col) qDurSortAsc *= -1;
+        else { qDurSortCol = col; qDurSortAsc = -1; }
+        window.renderQualityDashboard();
+    }
     // --- TOGGLE AGENT IN QUALITY DASH ---
     window.toggleQualityAgent = function(name) {
         const input = document.getElementById('qAgentSearch');
@@ -1428,13 +1505,58 @@
         window.renderQualityDashboard();
     }
 
-    // --- V64/V66/V67: DASHBOARD DE CALIDAD ---
+    // --- EXCEL EXPORT QUALITY ---
+    window.exportQualitySummary = function() {
+        if(window.currentQualitySummaryData.length === 0) return Swal.fire("Atención", "No hay datos para exportar.", "warning");
+        const ws = XLSX.utils.json_to_sheet(window.currentQualitySummaryData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Calidad");
+        XLSX.writeFile(wb, "Resumen_Calidad_Ejecutivos.xlsx");
+    }
+
+    window.exportDurationSummary = function() {
+        if(window.currentDurationSummaryData.length === 0) return Swal.fire("Atención", "No hay datos para exportar.", "warning");
+        const ws = XLSX.utils.json_to_sheet(window.currentDurationSummaryData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Tiempos");
+        XLSX.writeFile(wb, "Resumen_Tiempos_Ejecutivos.xlsx");
+    }
+
+    window.exportQualityDetails = function() {
+        if(window.currentQualityData.length === 0) return Swal.fire("Atención", "No hay datos para exportar.", "warning");
+        const exportData = window.currentQualityData.map(r => ({
+            "Fecha": r._d,
+            "Hora": r._t,
+            "Ejecutivo": r._a,
+            "Sentido": r.sentido || '-',
+            "Estado": r.estado || '-',
+            "Duración": r.tiempo_de_llamada || '00:00:00',
+            "Tipificación": r.tipificacion || '-',
+            "Observación": r.observacion || '-',
+            "Calidad": r._qStatus.toUpperCase()
+        }));
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Auditoria");
+        XLSX.writeFile(wb, "Auditoria_Glosas_Detalle.xlsx");
+    }
+
+    // --- V64/V66/V67/V68: DASHBOARD DE CALIDAD ---
     window.renderQualityDashboard = function() {
         if(!RAW_DATA_CACHE.aux || !RAW_DATA_CACHE.aux.length) return;
+        
+        // 1. Get Filters
         const dS = document.getElementById('qDateStart')?.value || '';
         const dE = document.getElementById('qDateEnd')?.value || '';
         const agentInput = (document.getElementById('qAgentSearch')?.value || '').toLowerCase();
         const stat = document.getElementById('qStatusFilter')?.value || '';
+        const callSense = (document.getElementById('qSentido')?.value || '').toLowerCase();
+        const callState = (document.getElementById('qEstado')?.value || 'atendida').toLowerCase();
+        
+        const minDurVal = document.getElementById('qMinDur')?.value;
+        const maxDurVal = document.getElementById('qMaxDur')?.value;
+        const minDur = minDurVal ? parseFloat(minDurVal) * 60 : 0;
+        const maxDur = maxDurVal ? parseFloat(maxDurVal) * 60 : Infinity;
 
         const excludedTips = [
             "no contesta", "buzon de voz", "n° no existe", "no existe", 
@@ -1442,28 +1564,55 @@
             "numero equivocado", "sin n° valido", "telefono apagado"
         ];
 
-        // 1. Filtrar atendidas y QUITAR BOTS (V66) + EXCLUIR NO CONTACTADOS (V67)
-        let baseQ = RAW_DATA_CACHE.aux.filter(r => {
+        // 2. Base Filter (Excludes Min/Max duration for proper Total vs Range comparison)
+        let baseFilteredNoDuration = RAW_DATA_CACHE.aux.filter(r => {
             const st = String(r.estado).toLowerCase().trim();
             const tL = timeToSec(r.tiempo_de_llamada);
             const isNoAt = st.includes('no-atendida') || st.includes('no atendida') || st.includes('abandonada') || st.includes('falla');
             const isAt = !isNoAt && (st.includes('atendida') || st.includes('conectad') || st === 'ok' || st === '' || tL > 0);
-            if (!isAt) return false;
+            
+            // Estado Filter
+            if (callState === 'atendida' && !isAt) return false;
+            if (callState === 'no-atendida' && !isNoAt) return false;
 
+            // Sentido Filter
+            if (callSense && !String(r.sentido||'').toLowerCase().includes(callSense)) return false;
+
+            // Anti-Bots
             const isBot = r._a_low.includes('agente ivr') || r._a_low.includes('agente ia') || r._a_low.startsWith('bot');
             if (isBot) return false;
 
+            // Fechas
             if (dS && r._d < dS) return false;
             if (dE && r._d > dE) return false;
 
-            // Filtro V67: Excluir Tipificaciones fallidas
+            // Excluir Tipificaciones fallidas
             const tipNorm = norm(r.tipificacion);
             if (excludedTips.some(t => tipNorm.includes(t))) return false;
             
             return true;
         });
 
-        // 2. Calcular estados de calidad
+        // 3. Durations Stats Calculation
+        let durationStats = {};
+        baseFilteredNoDuration.forEach(r => {
+            if(!durationStats[r._a]) {
+                durationStats[r._a] = { name: r._a, total: 0, inRange: 0 };
+            }
+            durationStats[r._a].total++;
+            const tL = timeToSec(r.tiempo_de_llamada);
+            if (tL >= minDur && tL <= maxDur) {
+                durationStats[r._a].inRange++;
+            }
+        });
+
+        // 4. Apply Duration Filter for Quality Modules
+        let baseQ = baseFilteredNoDuration.filter(r => {
+            const tL = timeToSec(r.tiempo_de_llamada);
+            return tL >= minDur && tL <= maxDur;
+        });
+
+        // 5. Calculate Quality Stats
         let counts = { verde: 0, roja: 0, vacia: 0 };
         let agentStats = {};
 
@@ -1504,7 +1653,7 @@
             });
         }
 
-        // Render Agent Summary Table (V66 Replace Grid)
+        // Render Quality Summary Table
         let agentList = Object.values(agentStats);
         agentList.sort((a, b) => {
             let vA = a[qSummarySortCol], vB = b[qSummarySortCol];
@@ -1514,13 +1663,17 @@
             return 0;
         });
 
+        window.currentQualitySummaryData = agentList.map(ag => ({
+            "Ejecutivo": ag.name, "Total En Rango": ag.total, "Óptimas": ag.verde, "Poco Útiles": ag.roja, "Vacías": ag.vacia
+        }));
+
         const tbSummary = document.getElementById('qAgentTableBody');
         if(tbSummary) {
             tbSummary.innerHTML = agentList.map(ag => {
                 let isSelected = (agentInput === ag.name.toLowerCase());
                 let rowClass = isSelected ? 'bg-emerald-50 ring-1 ring-emerald-500 shadow-sm z-10 relative' : 'hover:bg-slate-50 cursor-pointer';
                 return `<tr class="border-b border-slate-100 transition-colors ${rowClass}" onclick="window.toggleQualityAgent('${ag.name}')">
-                    <td class="px-3 py-2 font-bold text-slate-700 truncate max-w-[200px]" title="${ag.name}">${ag.name}</td>
+                    <td class="px-3 py-2 font-bold text-slate-700 truncate max-w-[150px]" title="${ag.name}">${ag.name}</td>
                     <td class="px-3 py-2 text-center font-bold">${ag.total}</td>
                     <td class="px-3 py-2 text-center font-bold text-emerald-600 bg-emerald-50/30">${ag.verde}</td>
                     <td class="px-3 py-2 text-center font-bold text-red-600 bg-red-50/30">${ag.roja}</td>
@@ -1529,7 +1682,44 @@
             }).join('');
         }
 
-        // Render Table (with active filters & sort)
+        // Render Duration Summary Table
+// Render Duration Summary Table
+        let durList = Object.values(durationStats);
+        durList.sort((a, b) => {
+            let vA, vB;
+            if(qDurSortCol === 'name') { vA = a.name.toLowerCase(); vB = b.name.toLowerCase(); }
+            else if(qDurSortCol === 'total') { vA = a.total; vB = b.total; }
+            else if(qDurSortCol === 'rango') { vA = a.inRange; vB = b.inRange; }
+            else if(qDurSortCol === 'porcentaje') { 
+                vA = a.total > 0 ? a.inRange / a.total : 0; 
+                vB = b.total > 0 ? b.inRange / b.total : 0; 
+            }
+            if(vA < vB) return -1 * qDurSortAsc;
+            if(vA > vB) return 1 * qDurSortAsc;
+            return 0;
+        });
+        
+        window.currentDurationSummaryData = durList.map(ag => {
+            let pct = ag.total > 0 ? (ag.inRange / ag.total * 100).toFixed(1) : 0;
+            return { "Ejecutivo": ag.name, "Llamadas Totales": ag.total, "Cumplen Filtro (En Rango)": ag.inRange, "% Cumplimiento": pct + "%" };
+        });
+
+        const tbDur = document.getElementById('qDurationTableBody');
+        if (tbDur) {
+            tbDur.innerHTML = durList.map(ag => {
+                let pct = ag.total > 0 ? (ag.inRange / ag.total * 100).toFixed(1) : 0;
+                let isSelected = (agentInput === ag.name.toLowerCase());
+                let rowClass = isSelected ? 'bg-blue-50 ring-1 ring-blue-500 shadow-sm z-10 relative' : 'hover:bg-slate-50 cursor-pointer';
+                return `<tr class="border-b border-slate-100 transition-colors ${rowClass}" onclick="window.toggleQualityAgent('${ag.name}')">
+                    <td class="px-3 py-2 font-bold text-slate-700 truncate max-w-[150px]" title="${ag.name}">${ag.name}</td>
+                    <td class="px-3 py-2 text-center font-bold">${ag.total}</td>
+                    <td class="px-3 py-2 text-center font-bold text-blue-600">${ag.inRange}</td>
+                    <td class="px-3 py-2 text-center font-bold text-slate-500">${pct}%</td>
+                </tr>`;
+            }).join('');
+        }
+
+        // Render Detailed Table (with active filters & sort)
         let tableQ = baseQ.filter(r => {
             if(agentInput && !r._a_low.includes(agentInput)) return false;
             if(stat && r._qStatus !== stat) return false;
@@ -1542,6 +1732,7 @@
             else if(qSortCol === 'agente') { vA = a._a_low; vB = b._a_low; }
             else if(qSortCol === 'tipificacion') { vA = (a.tipificacion||'').toLowerCase(); vB = (b.tipificacion||'').toLowerCase(); }
             else if(qSortCol === 'calidad') { vA = a._qStatus; vB = b._qStatus; }
+            else if(qSortCol === 'duracion') { vA = timeToSec(a.tiempo_de_llamada); vB = timeToSec(b.tiempo_de_llamada); }
             else { vA = (a.observacion||'').toLowerCase(); vB = (b.observacion||'').toLowerCase(); }
             
             if(vA < vB) return -1 * qSortAsc;
@@ -1549,26 +1740,31 @@
             return 0;
         });
 
-        const rc = document.getElementById('qRowCount'); if(rc) rc.innerText = tableQ.length + ' reg';
-        const tb = document.getElementById('qualityTableBody');
+        window.currentQualityData = tableQ; // Store for Excel Export
         
-        if(tb) {
-            tb.innerHTML = tableQ.slice(0, 200).map(r => {
+        const rc = document.getElementById('qRowCount'); if(rc) rc.innerText = tableQ.length + ' reg';
+        const tbDetails = document.getElementById('qualityTableBody');
+        
+        if(tbDetails) {
+            tbDetails.innerHTML = tableQ.slice(0, 200).map(r => {
                 let badge = '';
                 if(r._qStatus === 'verde') badge = '<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-[10px] font-bold border border-emerald-200">ÓPTIMA</span>';
                 else if(r._qStatus === 'roja') badge = '<span class="bg-red-100 text-red-800 px-2 py-1 rounded text-[10px] font-bold border border-red-200">POCO ÚTIL</span>';
                 else badge = '<span class="bg-slate-200 text-slate-700 px-2 py-1 rounded text-[10px] font-bold border border-slate-300">VACÍA</span>';
 
                 let safeObs = String(r.observacion || '').replace(/"/g, '&quot;');
+                let durText = r.tiempo_de_llamada || '00:00:00';
+                
                 return `<tr class="border-b border-slate-100 hover:bg-emerald-50/50">
                     <td class="px-3 py-2 font-mono whitespace-nowrap">${r._d} <span class="text-slate-400">${r._t}</span></td>
                     <td class="px-3 py-2 font-bold text-slate-700">${r._a}</td>
+                    <td class="px-3 py-2 font-mono text-indigo-600">${durText}</td>
                     <td class="px-3 py-2 text-[10px] uppercase text-slate-500">${r.tipificacion || '-'}</td>
-                    <td class="px-3 py-2 text-xs text-slate-600 max-w-md truncate" title="${safeObs}">${r.observacion || '-'}</td>
+                    <td class="px-3 py-2 text-xs text-slate-600 max-w-sm xl:max-w-md truncate" title="${safeObs}">${r.observacion || '-'}</td>
                     <td class="px-3 py-2 text-center">${badge}</td>
                 </tr>`;
             }).join('');
-            if(tableQ.length > 200) tb.innerHTML += `<tr><td colspan="5" class="text-center py-2 text-xs text-slate-400 bg-slate-50">Mostrando 200 de ${tableQ.length} registros</td></tr>`;
+            if(tableQ.length > 200) tbDetails.innerHTML += `<tr><td colspan="6" class="text-center py-2 text-xs text-slate-400 bg-slate-50">Mostrando 200 de ${tableQ.length} registros (Descarga Excel para ver todo)</td></tr>`;
         }
     }
 </script>
