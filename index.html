@@ -151,6 +151,7 @@
             <button onclick="window.switchTab('main')" id="tabBtnMain" class="px-4 py-2 font-bold text-xs border-b-2 border-blue-600 text-blue-600 transition-colors focus:outline-none">Dash General</button>
             <button onclick="window.switchTab('aux')" id="tabBtnAux" class="px-4 py-2 font-bold text-xs border-b-2 border-transparent text-slate-500 hover:text-purple-600 transition-colors focus:outline-none">Dash Auxiliar</button>
             <button onclick="window.switchTab('quality')" id="tabBtnQuality" class="px-4 py-2 font-bold text-xs border-b-2 border-transparent text-slate-500 hover:text-emerald-600 transition-colors focus:outline-none">Dash Calidad</button>
+            <button onclick="window.switchTab('traffic')" id="tabBtnTraffic" class="px-4 py-2 font-bold text-xs border-b-2 border-transparent text-slate-500 hover:text-orange-600 transition-colors focus:outline-none">Dash Tráfico</button>
         </div>
     </header>
 
@@ -185,7 +186,6 @@
         </div>
 
         <div id="tabMainContent" class="space-y-6 animate-fade-in pb-10 hidden">
-            
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col xl:flex-row gap-4 items-start xl:items-end flex-wrap">
                 <div class="w-full sm:w-auto flex flex-col gap-1">
                     <label class="text-[10px] font-bold text-slate-500 uppercase">Periodo</label>
@@ -209,7 +209,6 @@
                     </div>
                     <datalist id="agentsList"></datalist>
                 </div>
-                
                 <div class="w-full sm:w-auto flex flex-col gap-1">
                     <label class="text-[10px] font-bold text-slate-500 uppercase text-purple-600">Sentido (Aux)</label>
                     <select id="filterSentido" onchange="window.applyFilters()" class="bg-purple-50 border border-purple-200 rounded px-2 py-1.5 text-sm outline-none font-medium text-purple-800"><option value="">Todos</option><option value="entrante">Entrante</option><option value="saliente">Saliente</option></select>
@@ -222,7 +221,6 @@
                     <label class="text-[10px] font-bold text-slate-500 uppercase">Umbral Cortas</label>
                     <select id="shortCallThreshold" onchange="window.applyFilters()" class="bg-slate-50 border border-slate-300 rounded px-2 py-1.5 text-sm outline-none font-bold text-red-600"><option value="5">Menor a 5 seg</option><option value="15">Menor a 15 seg</option><option value="30">Menor a 30 seg</option><option value="45" selected>Menor a 45 seg</option><option value="60">Menor a 60 seg</option></select>
                 </div>
-                
                 <div class="flex gap-2 items-center flex-wrap w-full xl:w-auto justify-end">
                     <button id="btnToggleFeed" onclick="window.toggleFeedbackFilter()" class="bg-white border border-slate-300 text-slate-500 px-3 py-1.5 rounded text-sm font-bold shadow-sm transition-colors flex items-center gap-1"><i class="fas fa-star"></i> Solo Feed</button>
                     <button onclick="window.applyFilters()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-1.5 rounded text-sm font-bold shadow-sm">Filtrar</button>
@@ -273,14 +271,12 @@
 
         <div id="tabAuxContent" class="space-y-6 animate-fade-in pb-10 hidden">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-purple-200 flex flex-col xl:flex-row gap-4 items-start xl:items-end flex-wrap bg-purple-50/10">
-                
                 <div class="w-full sm:w-auto flex flex-col gap-1">
                     <label class="text-[10px] font-bold text-purple-600 uppercase">Día Analizado</label>
                     <div class="flex gap-2 items-center bg-white p-1 rounded-lg border border-purple-200">
                         <input type="date" id="auxDate" onchange="window.renderAuxDashboard()" class="bg-transparent text-xs outline-none font-bold text-slate-700">
                     </div>
                 </div>
-                
                 <div class="w-full sm:w-auto flex flex-col gap-1">
                     <label class="text-[10px] font-bold text-purple-600 uppercase">Agrupación / Vista</label>
                     <select id="auxInterval" onchange="window.renderAuxDashboard()" class="w-full bg-white border border-purple-200 rounded px-3 py-1.5 text-sm outline-none font-bold text-purple-700">
@@ -289,7 +285,6 @@
                         <option value="60" selected>Bloques de 60 Minutos</option>
                     </select>
                 </div>
-                
                 <div class="flex-grow w-full sm:w-auto relative">
                     <label class="text-[10px] font-bold text-purple-600 uppercase">Filtro Ejecutivo</label>
                     <div class="relative">
@@ -465,7 +460,7 @@
                     <div class="overflow-y-auto scroller w-full max-h-[300px]">
                         <table class="w-full text-sm text-left border-collapse">
                             <thead class="text-[10px] text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm font-bold">
-<tr>
+                                <tr>
                                     <th class="px-3 py-2 cursor-pointer hover:bg-slate-200" onclick="window.sortDurationSummary('name')">Ejecutivo <i class="fas fa-sort text-[8px] ml-1"></i></th>
                                     <th class="px-3 py-2 cursor-pointer hover:bg-slate-200 text-center" title="Total del periodo filtrado" onclick="window.sortDurationSummary('total')">Totales <i class="fas fa-sort text-[8px] ml-1"></i></th>
                                     <th class="px-3 py-2 cursor-pointer hover:bg-blue-100 text-center text-blue-600" title="Cumplen Min/Max Minutos" onclick="window.sortDurationSummary('rango')">En Rango <i class="fas fa-sort text-[8px] ml-1"></i></th>
@@ -504,6 +499,123 @@
             </div>
         </div>
 
+        <div id="tabTrafficContent" class="space-y-6 animate-fade-in pb-10 hidden">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-orange-200 flex flex-col xl:flex-row gap-4 items-start xl:items-end flex-wrap bg-orange-50/10">
+                <div class="w-full sm:w-auto flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-orange-600 uppercase">Periodo</label>
+                    <div class="flex gap-2 items-center bg-white p-1 rounded-lg border border-orange-200 flex-wrap">
+                        <input type="date" id="tDateStart" onchange="window.renderTrafficDashboard()" class="bg-transparent text-xs w-28 outline-none text-slate-700 font-bold">
+                        <input type="date" id="tDateEnd" onchange="window.renderTrafficDashboard()" class="bg-transparent text-xs w-28 outline-none text-slate-700 font-bold">
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                    <div class="flex justify-between items-center border-b pb-2 mb-4">
+                        <h3 class="text-sm font-bold text-slate-700 uppercase flex items-center gap-2"><i class="fas fa-arrow-down text-blue-500"></i> Tráfico Entrante</h3>
+                        <button onclick="window.exportTrafficInbound()" class="text-blue-600 hover:text-blue-800 text-[10px] font-bold bg-blue-50 px-2 py-1 rounded border border-blue-200"><i class="fas fa-file-excel"></i> Descargar</button>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div class="bg-slate-50 p-3 rounded-lg text-center border border-slate-100">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase">Recibidas</p>
+                            <p class="text-2xl font-bold text-slate-700" id="tKpiInRec">0</p>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded-lg text-center border border-blue-100">
+                            <p class="text-[10px] font-bold text-blue-500 uppercase">Atendidas</p>
+                            <p class="text-2xl font-bold text-blue-700" id="tKpiInAt">0</p>
+                        </div>
+                        <div class="bg-red-50 p-3 rounded-lg text-center border border-red-100">
+                            <p class="text-[10px] font-bold text-red-500 uppercase">Abandonadas</p>
+                            <p class="text-2xl font-bold text-red-700" id="tKpiInAb">0</p>
+                        </div>
+                        <div class="bg-green-50 p-3 rounded-lg text-center border border-green-100">
+                            <p class="text-[10px] font-bold text-green-500 uppercase">Atend < 30s</p>
+                            <p class="text-2xl font-bold text-green-700" id="tKpiInAt30">0</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-lg text-center border border-slate-100">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase">Nivel Servicio (NDS)</p>
+                            <p class="text-xl font-bold text-slate-700" id="tKpiInNds">0%</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-lg text-center border border-slate-100">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase">Nivel Atención (NDA)</p>
+                            <p class="text-xl font-bold text-slate-700" id="tKpiInNda">0%</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-lg text-center border border-slate-100">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase">TME (Espera)</p>
+                            <p class="text-xl font-bold text-slate-700" id="tKpiInTme">00:00</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-lg text-center border border-slate-100">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase">TMO (Hablado)</p>
+                            <p class="text-xl font-bold text-slate-700" id="tKpiInTmo">00:00</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
+                    <div class="flex justify-between items-center border-b pb-2 mb-4">
+                        <h3 class="text-sm font-bold text-slate-700 uppercase flex items-center gap-2"><i class="fas fa-arrow-up text-purple-500"></i> Tráfico Saliente</h3>
+                        <button onclick="window.exportTrafficOutbound()" class="text-purple-600 hover:text-purple-800 text-[10px] font-bold bg-purple-50 px-2 py-1 rounded border border-purple-200"><i class="fas fa-file-excel"></i> Descargar</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 h-full pb-8">
+                        <div class="bg-slate-50 p-3 rounded-lg text-center border border-slate-100 flex flex-col justify-center">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase">Total Emitidas</p>
+                            <p class="text-3xl font-bold text-slate-700" id="tKpiOutEmit">0</p>
+                        </div>
+                        <div class="bg-emerald-50 p-3 rounded-lg text-center border border-emerald-100 flex flex-col justify-center">
+                            <p class="text-[10px] font-bold text-emerald-600 uppercase">Contactos Efectivos</p>
+                            <p class="text-3xl font-bold text-emerald-700" id="tKpiOutEfec">0</p>
+                        </div>
+                        <div class="bg-orange-50 p-3 rounded-lg text-center border border-orange-100 flex flex-col justify-center">
+                            <p class="text-[10px] font-bold text-orange-600 uppercase">Llamadas Fallidas</p>
+                            <p class="text-3xl font-bold text-orange-700" id="tKpiOutFail">0</p>
+                        </div>
+                        <div class="bg-purple-50 p-3 rounded-lg text-center border border-purple-100 flex flex-col justify-center">
+                            <p class="text-[10px] font-bold text-purple-600 uppercase">Contactabilidad</p>
+                            <p class="text-3xl font-bold text-purple-700" id="tKpiOutCont">0%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col">
+                <h4 class="text-xs font-bold text-slate-500 uppercase mb-4 border-b pb-2"><i class="fas fa-fire text-orange-500"></i> Mapa de Distribución por Hora (Entrante)</h4>
+                <div class="flex-grow relative w-full h-64">
+                    <canvas id="trafficHourlyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col w-full">
+                <div class="px-4 py-3 border-b border-slate-100 bg-orange-50 flex justify-between items-center flex-wrap gap-2">
+                    <h3 class="text-sm font-bold text-orange-800 uppercase"><i class="fas fa-calendar-day"></i> Detalle Diario (Tráfico Entrante)</h3>
+                    <div class="flex gap-2 items-center">
+                        <span id="tRowCount" class="text-xs font-medium text-orange-600 bg-white border border-orange-200 px-2 py-1 rounded">0 reg</span>
+                        <button onclick="window.exportTrafficDaily()" class="text-emerald-600 hover:text-emerald-700 text-[10px] font-bold bg-white px-2 py-1 rounded border border-emerald-200 shadow-sm"><i class="fas fa-file-excel"></i> Descargar Tabla</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto scroller w-full max-h-[500px]">
+                    <table class="w-full text-sm text-left border-collapse min-w-[1000px]">
+                        <thead class="text-[10px] text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm font-bold">
+                            <tr>
+                                <th class="px-3 py-2 cursor-pointer hover:bg-slate-200" onclick="window.sortTraffic('fecha')">Fecha <i class="fas fa-sort text-[8px] ml-1 text-slate-400"></i></th>
+                                <th class="px-3 py-2">Día</th>
+                                <th class="px-3 py-2 text-center cursor-pointer hover:bg-slate-200" onclick="window.sortTraffic('recibidas')">Recibidas <i class="fas fa-sort text-[8px] ml-1 text-slate-400"></i></th>
+                                <th class="px-3 py-2 text-center cursor-pointer hover:bg-blue-100 text-blue-600" onclick="window.sortTraffic('atendidas')">Atendidas <i class="fas fa-sort text-[8px] ml-1 text-blue-400"></i></th>
+                                <th class="px-3 py-2 text-center cursor-pointer hover:bg-red-100 text-red-600" onclick="window.sortTraffic('abandonadas')">Abandonadas <i class="fas fa-sort text-[8px] ml-1 text-red-400"></i></th>
+                                <th class="px-3 py-2 text-center cursor-pointer hover:bg-green-100 text-green-600" onclick="window.sortTraffic('atend30')">Atend < 30s <i class="fas fa-sort text-[8px] ml-1 text-green-400"></i></th>
+                                <th class="px-3 py-2 text-center cursor-pointer hover:bg-slate-200" onclick="window.sortTraffic('nds')">NDS <i class="fas fa-sort text-[8px] ml-1 text-slate-400"></i></th>
+                                <th class="px-3 py-2 text-center cursor-pointer hover:bg-slate-200" onclick="window.sortTraffic('nda')">NDA <i class="fas fa-sort text-[8px] ml-1 text-slate-400"></i></th>
+                                <th class="px-3 py-2 text-center cursor-pointer hover:bg-slate-200" onclick="window.sortTraffic('tmo')">TMO <i class="fas fa-sort text-[8px] ml-1 text-slate-400"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody id="trafficTableBody" class="divide-y divide-slate-100 text-slate-600 text-xs"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <footer class="mt-8 py-6 text-center text-slate-400 text-[11px] border-t border-slate-200 bg-white">Desarrollado por: <a href="mailto:marco.lara.vera@gmail.com" class="font-bold text-slate-500 transition-all hover:text-blue-600 hover:drop-shadow-[0_0_8px_rgba(37,99,235,0.8)]">Marco Lara</a> - Iniciativa de innovación - 2026</footer>
@@ -534,13 +646,18 @@
     let qSortAsc = -1;
     let qSummarySortCol = 'total';
     let qSummarySortAsc = -1;
-let qDurSortCol = 'total';
+    let qDurSortCol = 'total';
     let qDurSortAsc = -1;
 
-    // Excel Export Data References
+    let tSortCol = 'fecha';
+    let tSortAsc = 1;
+
     window.currentQualityData = [];
     window.currentQualitySummaryData = [];
     window.currentDurationSummaryData = [];
+    window.currentTrafficDailyData = [];
+    window.currentTrafficInbound = [];
+    window.currentTrafficOutbound = [];
 
     const MANUAL_TEAMS = { "Luis Cataldo": ["Cristina Baron", "Cristobal Fernandez", "Angelica Galleguillos", "Paola Herrera", "Edith Ossandon", "Andreina Villalon"], "Angélica Ferrada": ["Diego Cea", "Carla Garay", "Yessenia Gonzalez", "Oscar Hidalgo", "Adrian Manzanilla"], "Carla Cabrera": ["Lesli Agudelo", "Miriam Bruges", "Maria Faria", "Johanna Herrera", "Lorena Rodriguez", "Jorge Yanez"], "Aracely Torres": ["Belfred Belis", "Saymar Paez", "Joanna Rojas", "Katya Caceres"] };
     const AGENT_IDS = { "adrian manzanilla": "CC0506", "andreina villalon": "CC1683", "carla garay": "CC5070", "cristina baron": "CC1815", "edith ossandon": "CC2762", "joanna rojas": "CC2846", "jorge yanez": "CC2467", "maria faria": "CC0851", "miriam bruges": "CC0928", "oscar hidalgo": "CC9827", "saymar paez": "CC1992", "yessenia gonzalez": "CC6869", "lorena rodriguez": "CC4346", "angelica galleguillos": "CC5251", "cristobal fernandez": "CC0315", "maria paz nunez": "CC5178", "diego cea": "CC7625", "johanna herrera": "CC7119", "lesli agudelo": "CC3118", "paola herrera": "CC3898", "belfred belis": "CC8219" };
@@ -559,7 +676,7 @@ let qDurSortCol = 'total';
         document.getElementById('statusMenu')?.classList.add('hidden');
         const si = document.getElementById('statusIndicator');
         if(si) { si.innerHTML = '<span class="text-orange-500">●</span> Manual'; si.className = "text-[10px] font-bold text-orange-600 border border-orange-200 bg-orange-50 px-2 py-1 rounded flex items-center gap-1 cursor-pointer hover:bg-orange-100 transition-colors shadow-sm"; }
-        document.getElementById('tabMainContent')?.classList.add('hidden'); document.getElementById('tabAuxContent')?.classList.add('hidden'); document.getElementById('tabQualityContent')?.classList.add('hidden'); document.getElementById('tabNavigation')?.classList.add('hidden'); document.getElementById('errorBox')?.classList.add('hidden'); document.getElementById('configPanel')?.classList.add('hidden');
+        document.getElementById('tabMainContent')?.classList.add('hidden'); document.getElementById('tabAuxContent')?.classList.add('hidden'); document.getElementById('tabQualityContent')?.classList.add('hidden'); document.getElementById('tabTrafficContent')?.classList.add('hidden'); document.getElementById('tabNavigation')?.classList.add('hidden'); document.getElementById('errorBox')?.classList.add('hidden'); document.getElementById('configPanel')?.classList.add('hidden');
         document.getElementById('offlineZone')?.classList.remove('hidden');
         if(Swal.isVisible()) Swal.close();
     }
@@ -773,6 +890,14 @@ let qDurSortCol = 'total';
     function getVal(row, keywords) { const keys = Object.keys(row); const k = keys.find(key => keywords.some(kw => key.toLowerCase() === kw.toLowerCase() || key.toLowerCase().includes(kw.toLowerCase()))); return k ? row[k] : undefined; }
     function extractTime(str) { let t = String(str).trim(); if(t.includes(' ')) t = t.split(' ').pop(); else if(t.includes('T')) t = t.split('T')[1]; let p = t.split(':'); if(p.length >= 2) return p[0].padStart(2,'0') + ':' + p[1].padStart(2,'0'); return t.substr(0,5); }
 
+    function getDayOfWeek(dateString) {
+        if(!dateString) return '-';
+        const d = new Date(dateString + 'T00:00:00');
+        const days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+        if(isNaN(d.getDay())) return '-';
+        return days[d.getDay()];
+    }
+
     window.evaluateQuality = function(obs, tel, tip, nom, tut) {
         if (!obs) return 'vacia';
         let o = String(obs).trim().toLowerCase();
@@ -812,7 +937,23 @@ let qDurSortCol = 'total';
         }
         
         const digitalMap = {}; if (digitalRows) { digitalRows.forEach(row => { const f=getVal(row, ['fecha']), a=getVal(row, ['agente']), h=getVal(row, ['horas']); if(f&&a&&h) { const key=`${cleanName(a)}|${normalizeDate(f)}`; digitalMap[key]=(digitalMap[key]||0) + parseFloat(h)*3600; } }); }
-        const groups = {}; if (detailRows) { detailRows.forEach(row => { const a=getVal(row, ['agente']), f=getVal(row, ['fecha']); if(!a) return; const name=cleanName(a), date=normalizeDate(f), key=`${name}|${date}`; UNIQUE_AGENTS.add(name); if(!groups[key]) groups[key]={agent:name, date:date, regs:[]}; groups[key].regs.push({ estado:String(getVal(row,['estado'])||"").toLowerCase(), inicio:getVal(row,['inicio']), tiempo:getVal(row,['tiempo']) }); }); }
+        
+        // V69: GLOBAL BOT EXCLUSION IN DETAIL ROWS
+        const groups = {}; 
+        if (detailRows) { 
+            detailRows.forEach(row => { 
+                const a=getVal(row, ['agente']), f=getVal(row, ['fecha']); 
+                if(!a) return; 
+                const name=cleanName(a);
+                const nameLow = name.toLowerCase();
+                if (nameLow.includes('agente ivr') || nameLow.includes('agente ia') || nameLow.startsWith('bot')) return;
+
+                const date=normalizeDate(f), key=`${name}|${date}`; 
+                UNIQUE_AGENTS.add(name); 
+                if(!groups[key]) groups[key]={agent:name, date:date, regs:[]}; 
+                groups[key].regs.push({ estado:String(getVal(row,['estado'])||"").toLowerCase(), inicio:getVal(row,['inicio']), tiempo:getVal(row,['tiempo']) }); 
+            }); 
+        }
         
         let allValidDates = new Set();
         const groupedAux = {}; 
@@ -873,6 +1014,7 @@ let qDurSortCol = 'total';
         } else {
             window.applyFilters();
             window.renderQualityDashboard();
+            window.renderTrafficDashboard();
         }
         
         const a1 = document.getElementById('cmpA1'), a2 = document.getElementById('cmpA2'), a3 = document.getElementById('cmpA3');
@@ -890,13 +1032,16 @@ let qDurSortCol = 'total';
             const dS = document.getElementById('dateStart'); const dE = document.getElementById('dateEnd'); 
             const axD = document.getElementById('auxDate');
             const qS = document.getElementById('qDateStart'); const qE = document.getElementById('qDateEnd'); 
+            const tS = document.getElementById('tDateStart'); const tE = document.getElementById('tDateEnd'); 
             
             if(dS) dS.value = minDate; if(dE) dE.value = maxDate; 
             if(axD && !axD.value) axD.value = maxDate;
             if(qS) qS.value = minDate; if(qE) qE.value = maxDate; 
+            if(tS) tS.value = minDate; if(tE) tE.value = maxDate; 
             
             window.applyFilters(); 
             window.renderQualityDashboard();
+            window.renderTrafficDashboard();
         } 
     }
     
@@ -905,7 +1050,6 @@ let qDurSortCol = 'total';
         if(a)a.value=''; if(s)s.value=''; if(fS)fS.value=''; if(fE)fE.value=''; 
         SHOW_ONLY_FEEDBACK = false; document.getElementById('btnToggleFeed')?.classList.remove('btn-active'); 
         
-        // V68: Clear Quality Filters
         const qa = document.getElementById('qAgentSearch'), qs = document.getElementById('qSentido'), qe = document.getElementById('qEstado'), qc = document.getElementById('qStatusFilter'), qmin = document.getElementById('qMinDur'), qmax = document.getElementById('qMaxDur');
         if(qa)qa.value=''; if(qs)qs.value=''; if(qe)qe.value='atendida'; if(qc)qc.value=''; if(qmin)qmin.value=''; if(qmax)qmax.value='';
         
@@ -939,6 +1083,9 @@ let qDurSortCol = 'total';
                 
                 let new_t_hab = 0, atend_c = 0, no_atend_c = 0, tmo_t = 0, cort_c = 0;
                 fAux.forEach(r => {
+                    const isBot = r._a_low.includes('agente ivr') || r._a_low.includes('agente ia') || r._a_low.startsWith('bot');
+                    if (isBot) return;
+
                     const tLla = timeToSec(r.tiempo_de_llamada), st = String(r.estado).toLowerCase().trim();
                     let isAt = (st.includes('atendida') || st.includes('conectad') || st === 'ok' || st === '' || tLla > 0) && !st.includes('no-atendida') && !st.includes('no atendida') && !st.includes('abandonada') && !st.includes('falla');
                     if (isAt) { 
@@ -1081,8 +1228,8 @@ let qDurSortCol = 'total';
     window.sort = function(key) { if(sortCol === key) sortAsc *= -1; else { sortCol = key; sortAsc = 1; } FILTERED_DATA.sort((a,b) => { let vA=key==='_totales'?a.c_calls+(a.c_no_atendidas||0):a[key], vB=key==='_totales'?b.c_calls+(b.c_no_atendidas||0):b[key]; if(typeof vA==='string'){vA=vA.toLowerCase();vB=vB.toLowerCase();} if(vA < vB) return -1 * sortAsc; if(vA > vB) return 1 * sortAsc; return 0; }); window.renderTable(); }
     
     window.switchTab = function(t) { 
-        const tabs = ['main', 'aux', 'quality'];
-        const colors = { main: 'blue', aux: 'purple', quality: 'emerald' };
+        const tabs = ['main', 'aux', 'quality', 'traffic'];
+        const colors = { main: 'blue', aux: 'purple', quality: 'emerald', traffic: 'orange' };
         tabs.forEach(tab => {
             document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}Content`)?.classList.toggle('hidden', t !== tab);
             const btn = document.getElementById(`tabBtn${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
@@ -1098,6 +1245,7 @@ let qDurSortCol = 'total';
         });
         if(t === 'aux') window.renderAuxDashboard();
         if(t === 'quality') window.renderQualityDashboard();
+        if(t === 'traffic') window.renderTrafficDashboard();
     }
     
     window.loadMoreRows = function() { VISIBLE_ROWS += 20; window.renderTable(); }
@@ -1139,6 +1287,8 @@ let qDurSortCol = 'total';
         const dF = document.getElementById('auxDate')?.value || '', tS = document.getElementById('auxTimeStart')?.value || '', tE = document.getElementById('auxTimeEnd')?.value || '', agent = (document.getElementById('auxAgentSearch')?.value || '').toLowerCase(), sent = (document.getElementById('auxSentido')?.value || '').toLowerCase(), intvF = document.getElementById('auxInterval')?.value || '';
         
         let filtered = RAW_DATA_CACHE.aux.filter(r => { 
+            const isBot = r._a_low.includes('agente ivr') || r._a_low.includes('agente ia') || r._a_low.startsWith('bot');
+            if (isBot) return false;
             return (!dF || r._d === dF) && (!tS || r._t >= tS) && (!tE || r._t <= tE) && (!agent || r._a_low.includes(agent)) && (!sent || String(r.sentido||'').toLowerCase().includes(sent)); 
         });
         
@@ -1210,6 +1360,8 @@ let qDurSortCol = 'total';
         window.updateAuxCompareChart();
     }
 
+    window.exportAuxTableOnly = function() { const tb = document.getElementById('auxDataTbl'); const ws = XLSX.utils.table_to_sheet(tb); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Auxiliar"); XLSX.writeFile(wb, "Reporte_Auxiliar.xlsx"); }
+
     window.updateAuxCompareChart = function() {
         const a1 = document.getElementById('cmpA1')?.value, a2 = document.getElementById('cmpA2')?.value, a3 = document.getElementById('cmpA3')?.value, m = document.getElementById('cmpMetric')?.value;
         const canvas = document.getElementById('auxCompareChart'); if(!canvas) return;
@@ -1261,7 +1413,7 @@ let qDurSortCol = 'total';
         });
     }
 
-    // --- Modal Triggers ---
+    // Modal Triggers
     window.startRecordingCountdown = function() {
         let count = 3; const overlay = document.getElementById('countdownOverlay'); overlay.innerText = count; overlay.classList.remove('hidden'); document.getElementById('btnRecord').disabled = true;
         recordInterval = setInterval(() => { count--; if(count > 0) { overlay.innerText = count; } else { clearInterval(recordInterval); overlay.classList.add('hidden'); window.startRecording(); } }, 1000);
@@ -1477,152 +1629,103 @@ let qDurSortCol = 'total';
     window.showConfig = function() { document.getElementById('configPanel').classList.remove('hidden'); }
     window.saveConfig = function() { const u=document.getElementById('apiUrlInput').value.trim(); if(!u) return; localStorage.setItem('cc_dashboard_api_url',u); window.closeConfig(); window.connectToSheet(u); }
 
-    // --- SORT QUALITY LOGIC ---
-    window.sortQuality = function(col) {
-        if(qSortCol === col) qSortAsc *= -1;
-        else { qSortCol = col; qSortAsc = 1; }
-        window.renderQualityDashboard();
-    }
+    // --- SORT LOGIC ---
+    window.sortQuality = function(col) { if(qSortCol === col) qSortAsc *= -1; else { qSortCol = col; qSortAsc = 1; } window.renderQualityDashboard(); }
+    window.sortQualitySummary = function(col) { if(qSummarySortCol === col) qSummarySortAsc *= -1; else { qSummarySortCol = col; qSummarySortAsc = -1; } window.renderQualityDashboard(); }
+    window.sortDurationSummary = function(col) { if(qDurSortCol === col) qDurSortAsc *= -1; else { qDurSortCol = col; qDurSortAsc = -1; } window.renderQualityDashboard(); }
+    window.sortTraffic = function(col) { if(tSortCol === col) tSortAsc *= -1; else { tSortCol = col; tSortAsc = -1; } window.renderTrafficDashboard(); }
     
-    window.sortQualitySummary = function(col) {
-        if(qSummarySortCol === col) qSummarySortAsc *= -1;
-        else { qSummarySortCol = col; qSummarySortAsc = -1; }
-        window.renderQualityDashboard();
-    }
-    window.sortDurationSummary = function(col) {
-        if(qDurSortCol === col) qDurSortAsc *= -1;
-        else { qDurSortCol = col; qDurSortAsc = -1; }
-        window.renderQualityDashboard();
-    }
     // --- TOGGLE AGENT IN QUALITY DASH ---
     window.toggleQualityAgent = function(name) {
         const input = document.getElementById('qAgentSearch');
-        if(input.value.toLowerCase() === name.toLowerCase()) {
-            input.value = ''; 
-        } else {
-            input.value = name; 
-        }
+        if(input.value.toLowerCase() === name.toLowerCase()) { input.value = ''; } else { input.value = name; }
         window.renderQualityDashboard();
     }
 
-    // --- EXCEL EXPORT QUALITY ---
+    // --- EXCEL EXPORTS ---
     window.exportQualitySummary = function() {
-        if(window.currentQualitySummaryData.length === 0) return Swal.fire("Atención", "No hay datos para exportar.", "warning");
-        const ws = XLSX.utils.json_to_sheet(window.currentQualitySummaryData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Calidad");
-        XLSX.writeFile(wb, "Resumen_Calidad_Ejecutivos.xlsx");
+        if(window.currentQualitySummaryData.length === 0) return Swal.fire("Atención", "No hay datos.", "warning");
+        const ws = XLSX.utils.json_to_sheet(window.currentQualitySummaryData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Calidad"); XLSX.writeFile(wb, "Resumen_Calidad_Ejecutivos.xlsx");
     }
-
     window.exportDurationSummary = function() {
-        if(window.currentDurationSummaryData.length === 0) return Swal.fire("Atención", "No hay datos para exportar.", "warning");
-        const ws = XLSX.utils.json_to_sheet(window.currentDurationSummaryData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Tiempos");
-        XLSX.writeFile(wb, "Resumen_Tiempos_Ejecutivos.xlsx");
+        if(window.currentDurationSummaryData.length === 0) return Swal.fire("Atención", "No hay datos.", "warning");
+        const ws = XLSX.utils.json_to_sheet(window.currentDurationSummaryData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Tiempos"); XLSX.writeFile(wb, "Resumen_Tiempos_Ejecutivos.xlsx");
     }
-
     window.exportQualityDetails = function() {
-        if(window.currentQualityData.length === 0) return Swal.fire("Atención", "No hay datos para exportar.", "warning");
-        const exportData = window.currentQualityData.map(r => ({
-            "Fecha": r._d,
-            "Hora": r._t,
-            "Ejecutivo": r._a,
-            "Sentido": r.sentido || '-',
-            "Estado": r.estado || '-',
-            "Duración": r.tiempo_de_llamada || '00:00:00',
-            "Tipificación": r.tipificacion || '-',
-            "Observación": r.observacion || '-',
-            "Calidad": r._qStatus.toUpperCase()
-        }));
-        const ws = XLSX.utils.json_to_sheet(exportData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Auditoria");
-        XLSX.writeFile(wb, "Auditoria_Glosas_Detalle.xlsx");
+        if(window.currentQualityData.length === 0) return Swal.fire("Atención", "No hay datos.", "warning");
+        const exportData = window.currentQualityData.map(r => ({ "Fecha": r._d, "Hora": r._t, "Ejecutivo": r._a, "Sentido": r.sentido || '-', "Estado": r.estado || '-', "Duración": r.tiempo_de_llamada || '00:00:00', "Tipificación": r.tipificacion || '-', "Observación": r.observacion || '-', "Calidad": r._qStatus.toUpperCase() }));
+        const ws = XLSX.utils.json_to_sheet(exportData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Auditoria"); XLSX.writeFile(wb, "Auditoria_Glosas_Detalle.xlsx");
+    }
+    window.exportTrafficInbound = function() {
+        if(window.currentTrafficInbound.length === 0) return Swal.fire("Atención", "No hay datos.", "warning");
+        const ws = XLSX.utils.json_to_sheet(window.currentTrafficInbound); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Entrantes"); XLSX.writeFile(wb, "Resumen_Trafico_Entrante.xlsx");
+    }
+    window.exportTrafficOutbound = function() {
+        if(window.currentTrafficOutbound.length === 0) return Swal.fire("Atención", "No hay datos.", "warning");
+        const ws = XLSX.utils.json_to_sheet(window.currentTrafficOutbound); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Salientes"); XLSX.writeFile(wb, "Resumen_Trafico_Saliente.xlsx");
+    }
+    window.exportTrafficDaily = function() {
+        if(window.currentTrafficDailyData.length === 0) return Swal.fire("Atención", "No hay datos.", "warning");
+        const ws = XLSX.utils.json_to_sheet(window.currentTrafficDailyData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Detalle Diario"); XLSX.writeFile(wb, "Trafico_Diario.xlsx");
     }
 
     // --- V64/V66/V67/V68: DASHBOARD DE CALIDAD ---
     window.renderQualityDashboard = function() {
         if(!RAW_DATA_CACHE.aux || !RAW_DATA_CACHE.aux.length) return;
-        
-        // 1. Get Filters
         const dS = document.getElementById('qDateStart')?.value || '';
         const dE = document.getElementById('qDateEnd')?.value || '';
         const agentInput = (document.getElementById('qAgentSearch')?.value || '').toLowerCase();
         const stat = document.getElementById('qStatusFilter')?.value || '';
         const callSense = (document.getElementById('qSentido')?.value || '').toLowerCase();
         const callState = (document.getElementById('qEstado')?.value || 'atendida').toLowerCase();
-        
         const minDurVal = document.getElementById('qMinDur')?.value;
         const maxDurVal = document.getElementById('qMaxDur')?.value;
         const minDur = minDurVal ? parseFloat(minDurVal) * 60 : 0;
         const maxDur = maxDurVal ? parseFloat(maxDurVal) * 60 : Infinity;
 
-        const excludedTips = [
-            "no contesta", "buzon de voz", "n° no existe", "no existe", 
-            "volver a llamar", "corta llamado", "n° equivocado", "corta llamada", 
-            "numero equivocado", "sin n° valido", "telefono apagado"
-        ];
+        const excludedTips = ["no contesta", "buzon de voz", "n° no existe", "no existe", "volver a llamar", "corta llamado", "n° equivocado", "corta llamada", "numero equivocado", "sin n° valido", "telefono apagado"];
 
-        // 2. Base Filter (Excludes Min/Max duration for proper Total vs Range comparison)
         let baseFilteredNoDuration = RAW_DATA_CACHE.aux.filter(r => {
             const st = String(r.estado).toLowerCase().trim();
             const tL = timeToSec(r.tiempo_de_llamada);
             const isNoAt = st.includes('no-atendida') || st.includes('no atendida') || st.includes('abandonada') || st.includes('falla');
             const isAt = !isNoAt && (st.includes('atendida') || st.includes('conectad') || st === 'ok' || st === '' || tL > 0);
             
-            // Estado Filter
             if (callState === 'atendida' && !isAt) return false;
             if (callState === 'no-atendida' && !isNoAt) return false;
-
-            // Sentido Filter
             if (callSense && !String(r.sentido||'').toLowerCase().includes(callSense)) return false;
 
-            // Anti-Bots
             const isBot = r._a_low.includes('agente ivr') || r._a_low.includes('agente ia') || r._a_low.startsWith('bot');
             if (isBot) return false;
 
-            // Fechas
             if (dS && r._d < dS) return false;
             if (dE && r._d > dE) return false;
 
-            // Excluir Tipificaciones fallidas
             const tipNorm = norm(r.tipificacion);
             if (excludedTips.some(t => tipNorm.includes(t))) return false;
-            
             return true;
         });
 
-        // 3. Durations Stats Calculation
         let durationStats = {};
         baseFilteredNoDuration.forEach(r => {
-            if(!durationStats[r._a]) {
-                durationStats[r._a] = { name: r._a, total: 0, inRange: 0 };
-            }
+            if(!durationStats[r._a]) { durationStats[r._a] = { name: r._a, total: 0, inRange: 0 }; }
             durationStats[r._a].total++;
             const tL = timeToSec(r.tiempo_de_llamada);
-            if (tL >= minDur && tL <= maxDur) {
-                durationStats[r._a].inRange++;
-            }
+            if (tL >= minDur && tL <= maxDur) { durationStats[r._a].inRange++; }
         });
 
-        // 4. Apply Duration Filter for Quality Modules
         let baseQ = baseFilteredNoDuration.filter(r => {
             const tL = timeToSec(r.tiempo_de_llamada);
             return tL >= minDur && tL <= maxDur;
         });
 
-        // 5. Calculate Quality Stats
         let counts = { verde: 0, roja: 0, vacia: 0 };
         let agentStats = {};
 
         baseQ.forEach(r => {
             r._qStatus = window.evaluateQuality(r.observacion, r.telefono, r.tipificacion, r.nombre, r.tutor);
             counts[r._qStatus]++;
-            
-            if(!agentStats[r._a]) {
-                agentStats[r._a] = { name: r._a, total: 0, verde: 0, roja: 0, vacia: 0 };
-            }
+            if(!agentStats[r._a]) { agentStats[r._a] = { name: r._a, total: 0, verde: 0, roja: 0, vacia: 0 }; }
             agentStats[r._a].total++;
             agentStats[r._a][r._qStatus]++;
         });
@@ -1635,25 +1738,12 @@ let qDurSortCol = 'total';
         const elVerde = document.getElementById('qKpiVerde'); if(elVerde) elVerde.innerText = pctVerde + '%';
         const elCrit = document.getElementById('qKpiCriticos'); if(elCrit) elCrit.innerText = criticos;
 
-        // Render Pie Chart
         const canvas = document.getElementById('qualityPieChart');
         if (canvas) {
             if(charts['qualityPie']) charts['qualityPie'].destroy();
-            charts['qualityPie'] = new Chart(canvas, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Óptimas (Verde)', 'Poco Útiles (Rojo)', 'Vacías (Gris)'],
-                    datasets: [{
-                        data: [counts.verde, counts.roja, counts.vacia],
-                        backgroundColor: ['#10b981', '#ef4444', '#94a3b8'],
-                        borderWidth: 0
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
-            });
+            charts['qualityPie'] = new Chart(canvas, { type: 'doughnut', data: { labels: ['Óptimas (Verde)', 'Poco Útiles (Rojo)', 'Vacías (Gris)'], datasets: [{ data: [counts.verde, counts.roja, counts.vacia], backgroundColor: ['#10b981', '#ef4444', '#94a3b8'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } } });
         }
 
-        // Render Quality Summary Table
         let agentList = Object.values(agentStats);
         agentList.sort((a, b) => {
             let vA = a[qSummarySortCol], vB = b[qSummarySortCol];
@@ -1663,9 +1753,7 @@ let qDurSortCol = 'total';
             return 0;
         });
 
-        window.currentQualitySummaryData = agentList.map(ag => ({
-            "Ejecutivo": ag.name, "Total En Rango": ag.total, "Óptimas": ag.verde, "Poco Útiles": ag.roja, "Vacías": ag.vacia
-        }));
+        window.currentQualitySummaryData = agentList.map(ag => ({ "Ejecutivo": ag.name, "Total En Rango": ag.total, "Óptimas": ag.verde, "Poco Útiles": ag.roja, "Vacías": ag.vacia }));
 
         const tbSummary = document.getElementById('qAgentTableBody');
         if(tbSummary) {
@@ -1682,18 +1770,13 @@ let qDurSortCol = 'total';
             }).join('');
         }
 
-        // Render Duration Summary Table
-// Render Duration Summary Table
         let durList = Object.values(durationStats);
         durList.sort((a, b) => {
             let vA, vB;
             if(qDurSortCol === 'name') { vA = a.name.toLowerCase(); vB = b.name.toLowerCase(); }
             else if(qDurSortCol === 'total') { vA = a.total; vB = b.total; }
             else if(qDurSortCol === 'rango') { vA = a.inRange; vB = b.inRange; }
-            else if(qDurSortCol === 'porcentaje') { 
-                vA = a.total > 0 ? a.inRange / a.total : 0; 
-                vB = b.total > 0 ? b.inRange / b.total : 0; 
-            }
+            else if(qDurSortCol === 'porcentaje') { vA = a.total > 0 ? a.inRange / a.total : 0; vB = b.total > 0 ? b.inRange / b.total : 0; }
             if(vA < vB) return -1 * qDurSortAsc;
             if(vA > vB) return 1 * qDurSortAsc;
             return 0;
@@ -1719,7 +1802,6 @@ let qDurSortCol = 'total';
             }).join('');
         }
 
-        // Render Detailed Table (with active filters & sort)
         let tableQ = baseQ.filter(r => {
             if(agentInput && !r._a_low.includes(agentInput)) return false;
             if(stat && r._qStatus !== stat) return false;
@@ -1734,13 +1816,12 @@ let qDurSortCol = 'total';
             else if(qSortCol === 'calidad') { vA = a._qStatus; vB = b._qStatus; }
             else if(qSortCol === 'duracion') { vA = timeToSec(a.tiempo_de_llamada); vB = timeToSec(b.tiempo_de_llamada); }
             else { vA = (a.observacion||'').toLowerCase(); vB = (b.observacion||'').toLowerCase(); }
-            
             if(vA < vB) return -1 * qSortAsc;
             if(vA > vB) return 1 * qSortAsc;
             return 0;
         });
 
-        window.currentQualityData = tableQ; // Store for Excel Export
+        window.currentQualityData = tableQ; 
         
         const rc = document.getElementById('qRowCount'); if(rc) rc.innerText = tableQ.length + ' reg';
         const tbDetails = document.getElementById('qualityTableBody');
@@ -1765,6 +1846,178 @@ let qDurSortCol = 'total';
                 </tr>`;
             }).join('');
             if(tableQ.length > 200) tbDetails.innerHTML += `<tr><td colspan="6" class="text-center py-2 text-xs text-slate-400 bg-slate-50">Mostrando 200 de ${tableQ.length} registros (Descarga Excel para ver todo)</td></tr>`;
+        }
+    }
+
+    // --- V69: DASHBOARD DE TRÁFICO ---
+    window.renderTrafficDashboard = function() {
+        if(!RAW_DATA_CACHE.aux || !RAW_DATA_CACHE.aux.length) return;
+        const dS = document.getElementById('tDateStart')?.value || '';
+        const dE = document.getElementById('tDateEnd')?.value || '';
+
+        let baseT = RAW_DATA_CACHE.aux.filter(r => {
+            if (dS && r._d < dS) return false;
+            if (dE && r._d > dE) return false;
+            return true;
+        });
+
+        let inRecibidas = 0, inAtendidas = 0, inAband = 0, inAtend30s = 0, sumWaitIn = 0, sumTalkIn = 0;
+        let outEmitidas = 0, outEfectivas = 0;
+        
+        let dailyStats = {};
+        let hourlyStats = {};
+
+        baseT.forEach(r => {
+            const isBot = r._a_low.includes('agente ivr') || r._a_low.includes('agente ia') || r._a_low.startsWith('bot');
+            const st = String(r.estado).toLowerCase().trim();
+            const tL = timeToSec(r.tiempo_de_llamada);
+            const tW = timeToSec(r.tiempo_de_espera);
+            const isNoAt = st.includes('no-atendida') || st.includes('no atendida') || st.includes('abandonada') || st.includes('falla');
+            const isAt = !isNoAt && (st.includes('atendida') || st.includes('conectad') || st === 'ok' || st === '' || tL > 0);
+            
+            const isEntrante = String(r.sentido).toLowerCase().includes('entrante');
+            const isSaliente = String(r.sentido).toLowerCase().includes('saliente');
+
+            if (isEntrante) {
+                inRecibidas++;
+                
+                if(!dailyStats[r._d]) dailyStats[r._d] = { d: r._d, rec: 0, at: 0, aband: 0, at30: 0, sumW: 0, sumT: 0 };
+                dailyStats[r._d].rec++;
+
+                let h = r._t.substring(0, 2) + ':00';
+                if(!hourlyStats[h]) hourlyStats[h] = { h: h, rec: 0, aband: 0 };
+                hourlyStats[h].rec++;
+
+                if (isAt && !isBot) {
+                    inAtendidas++;
+                    sumWaitIn += tW;
+                    sumTalkIn += tL;
+                    dailyStats[r._d].at++;
+                    dailyStats[r._d].sumW += tW;
+                    dailyStats[r._d].sumT += tL;
+                    if (tW <= 30) {
+                        inAtend30s++;
+                        dailyStats[r._d].at30++;
+                    }
+                } else {
+                    inAband++;
+                    dailyStats[r._d].aband++;
+                    hourlyStats[h].aband++;
+                }
+            } else if (isSaliente) {
+                outEmitidas++;
+                if (isAt && !isBot) outEfectivas++;
+            }
+        });
+
+        // INBOUND CALCS
+        let inNds = inAtendidas > 0 ? (inAtend30s / inAtendidas) * 100 : 0;
+        let inNda = inRecibidas > 0 ? (inAtendidas / inRecibidas) * 100 : 0;
+        let inTme = inAtendidas > 0 ? sumWaitIn / inAtendidas : 0;
+        let inTmo = inAtendidas > 0 ? sumTalkIn / inAtendidas : 0;
+        
+        window.currentTrafficInbound = [{ "Métrica": "Recibidas", "Valor": inRecibidas }, { "Métrica": "Atendidas", "Valor": inAtendidas }, { "Métrica": "Abandonadas", "Valor": inAband }, { "Métrica": "Atendidas < 30s", "Valor": inAtend30s }, { "Métrica": "NDS", "Valor": inNds.toFixed(1) + '%' }, { "Métrica": "NDA", "Valor": inNda.toFixed(1) + '%' }, { "Métrica": "TME", "Valor": secToTime(inTme, true) }, { "Métrica": "TMO", "Valor": secToTime(inTmo, true) }];
+
+        document.getElementById('tKpiInRec').innerText = inRecibidas;
+        document.getElementById('tKpiInAt').innerText = inAtendidas;
+        document.getElementById('tKpiInAb').innerText = inAband;
+        document.getElementById('tKpiInAt30').innerText = inAtend30s;
+        
+        const elNds = document.getElementById('tKpiInNds'); 
+        elNds.innerText = inNds.toFixed(1) + '%';
+        elNds.className = `text-xl font-bold ${inNds >= 80 ? 'text-green-600' : 'text-red-600'}`;
+
+        const elNda = document.getElementById('tKpiInNda'); 
+        elNda.innerText = inNda.toFixed(1) + '%';
+        elNda.className = `text-xl font-bold ${inNda >= 90 ? 'text-green-600' : 'text-red-600'}`;
+
+        document.getElementById('tKpiInTme').innerText = secToTime(inTme, true);
+        document.getElementById('tKpiInTmo').innerText = secToTime(inTmo, true);
+
+        // OUTBOUND CALCS
+        let outFallidas = outEmitidas - outEfectivas;
+        let outCont = outEmitidas > 0 ? (outEfectivas / outEmitidas) * 100 : 0;
+        
+        window.currentTrafficOutbound = [{ "Métrica": "Total Emitidas", "Valor": outEmitidas }, { "Métrica": "Contactos Efectivos", "Valor": outEfectivas }, { "Métrica": "Llamadas Fallidas", "Valor": outFallidas }, { "Métrica": "Contactabilidad", "Valor": outCont.toFixed(1) + '%' }];
+
+        document.getElementById('tKpiOutEmit').innerText = outEmitidas;
+        document.getElementById('tKpiOutEfec').innerText = outEfectivas;
+        document.getElementById('tKpiOutFail').innerText = outFallidas;
+        document.getElementById('tKpiOutCont').innerText = outCont.toFixed(1) + '%';
+
+        // CHART HOURLY
+        const hours = Object.keys(hourlyStats).sort();
+        const dRec = hours.map(h => hourlyStats[h].rec);
+        const dAband = hours.map(h => hourlyStats[h].aband);
+        
+        const canvas = document.getElementById('trafficHourlyChart');
+        if (canvas) {
+            if(charts['trafficHourly']) charts['trafficHourly'].destroy();
+            charts['trafficHourly'] = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: hours,
+                    datasets: [
+                        { label: 'Recibidas', data: dRec, backgroundColor: '#3b82f6', borderRadius: 4 },
+                        { label: 'Abandonadas', data: dAband, type: 'line', borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.3 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        // DAILY TABLE
+        let dailyArr = Object.values(dailyStats);
+        dailyArr.sort((a, b) => {
+            let vA = a[tSortCol] || a.d, vB = b[tSortCol] || b.d;
+            
+            if(tSortCol === 'fecha') { vA = a.d; vB = b.d; }
+            else if(tSortCol === 'recibidas') { vA = a.rec; vB = b.rec; }
+            else if(tSortCol === 'atendidas') { vA = a.at; vB = b.at; }
+            else if(tSortCol === 'abandonadas') { vA = a.aband; vB = b.aband; }
+            else if(tSortCol === 'atend30') { vA = a.at30; vB = b.at30; }
+            else if(tSortCol === 'nds') { vA = a.at > 0 ? a.at30 / a.at : 0; vB = b.at > 0 ? b.at30 / b.at : 0; }
+            else if(tSortCol === 'nda') { vA = a.rec > 0 ? a.at / a.rec : 0; vB = b.rec > 0 ? b.at / b.rec : 0; }
+            else if(tSortCol === 'tmo') { vA = a.at > 0 ? a.sumT / a.at : 0; vB = b.at > 0 ? b.sumT / b.at : 0; }
+
+            if(vA < vB) return -1 * tSortAsc;
+            if(vA > vB) return 1 * tSortAsc;
+            return 0;
+        });
+
+        window.currentTrafficDailyData = dailyArr.map(d => {
+            let nds = d.at > 0 ? (d.at30 / d.at) * 100 : 0;
+            let nda = d.rec > 0 ? (d.at / d.rec) * 100 : 0;
+            let tmo = d.at > 0 ? d.sumT / d.at : 0;
+            return {
+                "Fecha": d.d, "Día": getDayOfWeek(d.d), "Recibidas": d.rec, "Atendidas": d.at, "Abandonadas": d.aband, "Atendidas < 30s": d.at30, "NDS": nds.toFixed(1) + '%', "NDA": nda.toFixed(1) + '%', "TMO": secToTime(tmo, true)
+            };
+        });
+
+        const rc = document.getElementById('tRowCount'); if(rc) rc.innerText = dailyArr.length + ' reg';
+        const tb = document.getElementById('trafficTableBody');
+        
+        if (tb) {
+            tb.innerHTML = dailyArr.map(d => {
+                let nds = d.at > 0 ? (d.at30 / d.at) * 100 : 0;
+                let nda = d.rec > 0 ? (d.at / d.rec) * 100 : 0;
+                let tmo = d.at > 0 ? d.sumT / d.at : 0;
+
+                let cNds = nds >= 80 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50';
+                let cNda = nda >= 90 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50';
+
+                return `<tr class="border-b border-slate-100 hover:bg-orange-50/50">
+                    <td class="px-3 py-2 font-mono whitespace-nowrap">${d.d}</td>
+                    <td class="px-3 py-2 font-bold text-slate-500 uppercase text-[10px]">${getDayOfWeek(d.d)}</td>
+                    <td class="px-3 py-2 text-center font-bold text-slate-700">${d.rec}</td>
+                    <td class="px-3 py-2 text-center font-bold text-blue-600">${d.at}</td>
+                    <td class="px-3 py-2 text-center font-bold text-red-600">${d.aband}</td>
+                    <td class="px-3 py-2 text-center font-bold text-green-600">${d.at30}</td>
+                    <td class="px-3 py-2 text-center font-bold ${cNds}">${nds.toFixed(1)}%</td>
+                    <td class="px-3 py-2 text-center font-bold ${cNda}">${nda.toFixed(1)}%</td>
+                    <td class="px-3 py-2 text-center font-mono text-slate-600">${secToTime(tmo, true)}</td>
+                </tr>`;
+            }).join('');
         }
     }
 </script>
