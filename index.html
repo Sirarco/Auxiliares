@@ -34,6 +34,8 @@
         .drag-over { background-color: #e2e8f0 !important; opacity: 0.8; border: 2px dashed #8b5cf6; }
         th[draggable=true] { cursor: grab; }
         th[draggable=true]:active { cursor: grabbing; }
+        .accordion-btn { font-family: monospace; font-weight: bold; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+        .accordion-btn:hover { background: #e2e8f0; }
     </style>
 </head>
 <body class="text-slate-800 bg-slate-50 flex flex-col min-h-screen relative">
@@ -196,9 +198,9 @@
                     </div>
                 </div>
                 <div class="flex-grow w-full sm:w-auto">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase">Supervisor</label>
-                    <select id="supervisorFilter" onchange="window.applyFilters()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-sm outline-none">
-                        <option value="">Todos</option><option value="Luis Cataldo">Luis Cataldo</option><option value="Angélica Ferrada">Angélica Ferrada</option><option value="Carla Cabrera">Carla Cabrera</option><option value="Aracely Torres">Aracely Torres</option>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Servicio</label>
+                    <select id="serviceFilter" onchange="window.applyFilters()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-sm outline-none">
+                        <option value="">Todos</option><option value="Bloqueo">Bloqueo</option><option value="Ingresos">Ingresos</option><option value="FDS">FDS</option><option value="Mesa Central">Mesa Central</option>
                     </select>
                 </div>
                 <div class="flex-grow w-full sm:w-auto relative">
@@ -223,6 +225,7 @@
                 </div>
                 <div class="flex gap-2 items-center flex-wrap w-full xl:w-auto justify-end">
                     <button id="btnToggleFeed" onclick="window.toggleFeedbackFilter()" class="bg-white border border-slate-300 text-slate-500 px-3 py-1.5 rounded text-sm font-bold shadow-sm transition-colors flex items-center gap-1"><i class="fas fa-star"></i> Solo Feed</button>
+                    <label class="flex items-center gap-1 text-[10px] font-bold text-blue-600 uppercase cursor-pointer bg-blue-50 px-2 py-1 rounded border border-blue-200 hover:bg-blue-100 transition-colors"><input type="checkbox" id="chkConsolidate" onchange="window.renderTable()"> Vista Acumulada</label>
                     <button onclick="window.applyFilters()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-1.5 rounded text-sm font-bold shadow-sm">Filtrar</button>
                     <button onclick="window.clearFilters()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-1.5 rounded text-sm font-bold">Limpiar</button>
                     <button onclick="window.exportSummaryExcel()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded text-sm font-bold shadow-sm flex items-center justify-center min-w-[32px]" title="Exportar Resumen Excel">R</button>
@@ -245,12 +248,11 @@
             </div>
 
             <div id="kpiGlobalGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4"></div>
-
             <div id="rankGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3"></div>
 
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col w-full max-w-full">
                 <div class="px-4 sm:px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center flex-wrap gap-2">
-                    <h3 class="text-sm font-bold text-slate-600 uppercase flex items-center gap-2"><i class="fas fa-list"></i> Detalle Diario</h3>
+                    <h3 class="text-sm font-bold text-slate-600 uppercase flex items-center gap-2"><i class="fas fa-list"></i> Detalle Principal</h3>
                     <div class="flex gap-2 items-center">
                         <button onclick="window.clearAgentSearch()" id="btnClearAgentFilter" class="hidden text-red-500 hover:text-red-700 text-xs font-bold bg-red-50 px-2 py-1 rounded border border-red-100 transition-colors"><i class="fas fa-times"></i> Quitar Filtro Agente</button>
                         <span id="rowCount" class="text-xs font-medium text-slate-400 bg-white border border-slate-200 px-2 py-1 rounded">0 reg</span>
@@ -272,73 +274,91 @@
         <div id="tabAuxContent" class="space-y-6 animate-fade-in pb-10 hidden">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-purple-200 flex flex-col xl:flex-row gap-4 items-start xl:items-end flex-wrap bg-purple-50/10">
                 <div class="w-full sm:w-auto flex flex-col gap-1">
-                    <label class="text-[10px] font-bold text-purple-600 uppercase">Día Analizado</label>
+                    <label class="text-[10px] font-bold text-purple-600 uppercase">Día/Rango Analizado</label>
                     <div class="flex gap-2 items-center bg-white p-1 rounded-lg border border-purple-200">
-                        <input type="date" id="auxDate" onchange="window.renderAuxDashboard()" class="bg-transparent text-xs outline-none font-bold text-slate-700">
+                        <input type="date" id="auxDateStart" onchange="window.renderAuxDashboard()" class="bg-transparent text-xs outline-none font-bold text-slate-700">
+                        <input type="date" id="auxDateEnd" onchange="window.renderAuxDashboard()" class="bg-transparent text-xs outline-none font-bold text-slate-700">
                     </div>
                 </div>
                 <div class="w-full sm:w-auto flex flex-col gap-1">
                     <label class="text-[10px] font-bold text-purple-600 uppercase">Agrupación / Vista</label>
                     <select id="auxInterval" onchange="window.renderAuxDashboard()" class="w-full bg-white border border-purple-200 rounded px-3 py-1.5 text-sm outline-none font-bold text-purple-700">
-                        <option value="">Detalle de Llamadas</option>
+                        <option value="">Vista Plana (Detalle Bruto)</option>
                         <option value="30">Bloques de 30 Minutos</option>
                         <option value="60" selected>Bloques de 60 Minutos</option>
                     </select>
                 </div>
-                <div class="flex-grow w-full sm:w-auto relative">
-                    <label class="text-[10px] font-bold text-purple-600 uppercase">Filtro Ejecutivo</label>
-                    <div class="relative">
-                        <input list="agentsList" id="auxAgentSearch" oninput="window.debouncedRenderAux()" placeholder="Nombre..." class="w-full bg-white border border-purple-200 rounded px-3 py-1.5 text-sm outline-none pr-8">
-                        <button onclick="document.getElementById('auxAgentSearch').value=''; window.renderAuxDashboard();" class="absolute right-2 top-1.5 text-purple-400 hover:text-purple-600 font-bold">✕</button>
-                    </div>
+                
+                <div class="w-full sm:w-auto flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-purple-600 uppercase">Servicio</label>
+                    <select id="auxServiceFilter" onchange="window.handleAuxServiceChange()" class="w-full bg-white border border-purple-200 rounded px-3 py-1.5 text-sm outline-none">
+                        <option value="">Todos</option>
+                        <option value="Bloqueo">Bloqueo</option>
+                        <option value="Ingresos">Ingresos</option>
+                        <option value="FDS">FDS</option>
+                        <option value="Mesa Central">Mesa Central</option>
+                    </select>
                 </div>
-                <div class="w-full sm:w-auto flex flex-col gap-1"><label class="text-[10px] font-bold text-purple-600 uppercase">Sentido</label><select id="auxSentido" onchange="window.renderAuxDashboard()" class="w-full bg-white border border-purple-200 rounded px-3 py-1.5 text-sm outline-none"><option value="">Todos</option><option value="entrante">Entrante</option><option value="saliente">Saliente</option></select></div>
-            </div>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4" id="auxKpiGrid"></div>
-            
-            <div class="bg-white rounded-xl shadow-sm border border-purple-200 p-4">
-                <div class="flex flex-col sm:flex-row justify-between items-center mb-4 border-b border-purple-100 pb-2 gap-2">
-                    <h4 class="text-xs font-bold text-purple-600 uppercase"><i class="fas fa-chart-line"></i> Evolución por Rangos Horarios</h4>
-                    <div class="flex gap-2 flex-wrap text-xs">
-                        <select id="cmpMetric" onchange="window.updateAuxCompareChart()" class="border border-purple-200 rounded p-1 text-purple-700 outline-none font-bold bg-purple-50">
-                            <option value="hablado">Suma Tiempo Hablado (Seg)</option>
-                            <option value="atendidas">Llamadas Atendidas</option>
-                            <option value="no_atendidas">Llamadas No Atendidas</option>
-                            <option value="contactabilidad">Contactabilidad (%)</option>
-                            <option value="tmo">TMO Promedio (Seg)</option>
-                        </select>
-                        <select id="cmpA1" onchange="window.updateAuxCompareChart()" class="border border-slate-300 rounded p-1 outline-none max-w-[120px]"><option value="">Agente 1...</option></select>
-                        <select id="cmpA2" onchange="window.updateAuxCompareChart()" class="border border-slate-300 rounded p-1 outline-none max-w-[120px]"><option value="">Agente 2...</option></select>
-                        <select id="cmpA3" onchange="window.updateAuxCompareChart()" class="border border-slate-300 rounded p-1 outline-none max-w-[120px]"><option value="">Agente 3...</option></select>
+
+                <div class="flex-grow w-full sm:w-auto relative">
+                    <label class="text-[10px] font-bold text-purple-600 uppercase">Añadir Ejecutivo (Comparar)</label>
+                    <div class="relative flex gap-1">
+                        <input list="auxAgentsList" id="auxAgentSearch" placeholder="Escriba y presione Enter..." class="w-full bg-white border border-purple-200 rounded px-3 py-1.5 text-sm outline-none" onkeydown="if(event.key==='Enter') window.addAuxAgent(this.value)">
+                        <button onclick="window.addAuxAgent(document.getElementById('auxAgentSearch').value)" class="bg-purple-100 text-purple-700 px-3 rounded border border-purple-200 hover:bg-purple-200 font-bold">+</button>
                     </div>
+                    <datalist id="auxAgentsList"></datalist>
+                </div>
+                
+                <div class="w-full sm:w-auto flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-purple-600 uppercase">Sentido</label>
+                    <select id="auxSentido" onchange="window.renderAuxDashboard()" class="w-full bg-white border border-purple-200 rounded px-3 py-1.5 text-sm outline-none">
+                        <option value="">Todos</option><option value="entrante">Entrante</option><option value="saliente">Saliente</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4" id="auxKpiGrid"></div>
+
+            <div id="auxSelectedPills" class="flex flex-wrap gap-2 empty:hidden"></div>
+
+            <div id="auxCompareCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 empty:hidden"></div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-purple-200 p-4 hidden" id="auxEvolChartBox">
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-4 border-b border-purple-100 pb-2 gap-2">
+                    <h4 class="text-xs font-bold text-purple-600 uppercase"><i class="fas fa-chart-line"></i> Comparativa Gráfica por Rangos</h4>
+                    <select id="cmpMetric" onchange="window.updateAuxCompareChart()" class="border border-purple-200 rounded p-1 text-purple-700 outline-none font-bold bg-purple-50 text-xs">
+                        <option value="hablado">Suma Tiempo Hablado (Seg)</option>
+                        <option value="atendidas">Llamadas Atendidas</option>
+                        <option value="no_atendidas">Llamadas No Atendidas</option>
+                        <option value="contactabilidad">Contactabilidad (%)</option>
+                        <option value="tmo">TMO Promedio (Seg)</option>
+                    </select>
                 </div>
                 <div class="h-48 relative w-full"><canvas id="auxCompareChart"></canvas></div>
             </div>
 
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col w-full">
                 <div class="px-4 py-3 border-b border-slate-100 bg-purple-50 flex justify-between items-center flex-wrap gap-2">
-                    <h3 class="text-sm font-bold text-purple-800 uppercase" id="auxTableTitle">Detalle de Llamadas</h3>
+                    <h3 class="text-sm font-bold text-purple-800 uppercase" id="auxTableTitle">Detalle y Auditoría de Rangos</h3>
                     <div class="flex gap-2">
                         <div class="relative">
-                            <button onclick="document.getElementById('colConfigModal').classList.toggle('hidden')" class="text-[10px] bg-white border border-purple-200 text-purple-600 px-2 py-1 rounded hover:bg-purple-100 font-bold">Personalizar Columnas ▼</button>
+                            <button onclick="document.getElementById('colConfigModal').classList.toggle('hidden')" class="text-[10px] bg-white border border-purple-200 text-purple-600 px-2 py-1 rounded hover:bg-purple-100 font-bold">Columnas ▼</button>
                             <div id="colConfigModal" class="hidden absolute right-0 mt-1 w-48 bg-white border border-slate-200 rounded shadow-xl z-50 p-3 flex flex-col gap-2 text-xs">
                                 <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-fecha')"> Fecha</label>
-                                <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-hora')"> Hora/Rango</label>
+                                <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-hora')"> Rango / Hora</label>
                                 <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-agente')"> Agente</label>
-                                <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-total')"> Totales / Tel</label>
-                                <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-atend')"> Atendidas / Estado</label>
-                                <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-noatend')"> No Atendidas / Sent</label>
-                                <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-tmo')"> TMO / Espera</label>
-                                <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-hablado')"> Hablado / Duración</label>
+                                <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-total')"> Totales</label>
+                                <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-atend')"> Atendidas</label>
+                                <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-noatend')"> No Atendidas</label>
+                                <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-tmo')"> TMO</label>
+                                <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-hablado')"> Suma Hablado</label>
                                 <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-contact')"> Contactabilidad</label>
-                                <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-pacw')"> P-ACW / Obs</label>
                             </div>
                         </div>
                         <button onclick="window.exportAuxTableOnly()" class="text-emerald-600 hover:text-emerald-700 text-[10px] font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-100">Descargar Excel</button>
                     </div>
                 </div>
-                <div class="overflow-x-auto scroller w-full max-h-[600px]">
+                <div class="overflow-x-auto scroller w-full max-h-[800px]">
                     <table class="w-full text-sm text-left border-collapse min-w-[1000px]" id="auxDataTbl">
                         <thead class="text-[10px] text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm font-bold" id="auxTableHead"></thead>
                         <tbody id="auxTableBody" class="divide-y divide-slate-100 text-slate-600 text-xs"></tbody>
@@ -619,7 +639,6 @@
     </main>
 
     <footer class="mt-8 py-6 text-center text-slate-400 text-[11px] border-t border-slate-200 bg-white">Desarrollado por: <a href="mailto:marco.lara.vera@gmail.com" class="font-bold text-slate-500 transition-all hover:text-blue-600 hover:drop-shadow-[0_0_8px_rgba(37,99,235,0.8)]">Marco Lara</a> - Iniciativa de innovación - 2026</footer>
-
 <script>
     // --- 1. GLOBALS & INIT ---
     const { jsPDF } = window.jspdf;
@@ -634,34 +653,66 @@
     let mediaRecorder, audioChunks = [], recordSeconds = 0, recordInterval;
     let currentFeedbackRow = null;
     
-    let filterDebounceTimer = null;
-    let auxDebounceTimer = null;
-    let qualityDebounceTimer = null;
+    let filterDebounceTimer = null, auxDebounceTimer = null, qualityDebounceTimer = null;
+    let sortCol = null, sortAsc = 1;
     
-    let auxVisCols = { 'col-fecha':true, 'col-hora':true, 'col-agente':true, 'col-total':true, 'col-atend':true, 'col-noatend':true, 'col-tmo':true, 'col-hablado':true, 'col-contact':true, 'col-pacw':true };
-    let auxColOrder = ['col-fecha', 'col-hora', 'col-agente', 'col-total', 'col-atend', 'col-noatend', 'col-tmo', 'col-hablado', 'col-contact', 'col-pacw'];
+    // --- GLOBALES AUXILIAR ---
+    let selectedAuxAgents = [];
+    let auxVisCols = { 'col-fecha':true, 'col-hora':true, 'col-agente':true, 'col-total':true, 'col-atend':true, 'col-noatend':true, 'col-tmo':true, 'col-hablado':true, 'col-contact':true, 'col-pacw':false };
+    let auxColOrder = ['col-fecha', 'col-hora', 'col-agente', 'col-total', 'col-atend', 'col-noatend', 'col-tmo', 'col-hablado', 'col-contact'];
     let auxDragSrcEl = null;
 
-    let qSortCol = 'fecha';
-    let qSortAsc = -1;
-    let qSummarySortCol = 'total';
-    let qSummarySortAsc = -1;
-    let qDurSortCol = 'total';
-    let qDurSortAsc = -1;
+    let qSortCol = 'fecha', qSortAsc = -1, qSummarySortCol = 'total', qSummarySortAsc = -1, qDurSortCol = 'total', qDurSortAsc = -1, tSortCol = 'fecha', tSortAsc = 1;
+    window.currentQualityData = []; window.currentQualitySummaryData = []; window.currentDurationSummaryData = []; window.currentTrafficDailyData = []; window.currentTrafficInbound = []; window.currentTrafficOutbound = [];
 
-    let tSortCol = 'fecha';
-    let tSortAsc = 1;
+    // --- DICCIONARIO DE SERVICIOS ---
+    const AUX_SERVICES_MAP = {
+        "Bloqueo": ["Lorena Rodriguez", "Lorena", "Andreina Villalon", "Andreina", "Oscar Hidalgo", "Oscar"],
+        "Ingresos": ["Carla Garay", "Carla", "Miriam Bruges", "Miriam", "Cristobal Fernandez", "Cristobal", "Jorge Yanez", "Jorge"],
+        "FDS": ["Joanna Rojas", "Joanna", "Saymar Paez", "Saymar"]
+    };
 
-    window.currentQualityData = [];
-    window.currentQualitySummaryData = [];
-    window.currentDurationSummaryData = [];
-    window.currentTrafficDailyData = [];
-    window.currentTrafficInbound = [];
-    window.currentTrafficOutbound = [];
-
-    const MANUAL_TEAMS = { "Luis Cataldo": ["Cristina Baron", "Cristobal Fernandez", "Angelica Galleguillos", "Paola Herrera", "Edith Ossandon", "Andreina Villalon"], "Angélica Ferrada": ["Diego Cea", "Carla Garay", "Yessenia Gonzalez", "Oscar Hidalgo", "Adrian Manzanilla"], "Carla Cabrera": ["Lesli Agudelo", "Miriam Bruges", "Maria Faria", "Johanna Herrera", "Lorena Rodriguez", "Jorge Yanez"], "Aracely Torres": ["Belfred Belis", "Saymar Paez", "Joanna Rojas", "Katya Caceres"] };
     const AGENT_IDS = { "adrian manzanilla": "CC0506", "andreina villalon": "CC1683", "carla garay": "CC5070", "cristina baron": "CC1815", "edith ossandon": "CC2762", "joanna rojas": "CC2846", "jorge yanez": "CC2467", "maria faria": "CC0851", "miriam bruges": "CC0928", "oscar hidalgo": "CC9827", "saymar paez": "CC1992", "yessenia gonzalez": "CC6869", "lorena rodriguez": "CC4346", "angelica galleguillos": "CC5251", "cristobal fernandez": "CC0315", "maria paz nunez": "CC5178", "diego cea": "CC7625", "johanna herrera": "CC7119", "lesli agudelo": "CC3118", "paola herrera": "CC3898", "belfred belis": "CC8219" };
     const AUX_MAPPING = { "adrian.manzanilla": "Adrian Manzanilla", "andreina.villalon": "Andreina Villalon", "carla.garay.": "Carla Garay", "carla.garay": "Carla Garay", "cristina.baron": "Cristina Baron", "edith.ossandon": "Edith Ossandon", "joanna.rojas": "Joanna Rojas", "jorge.yanez": "Jorge Yanez", "maria.faria": "Maria Faria", "miriam.bruges": "Miriam Bruges", "oscar.hidalgo": "Oscar Hidalgo", "saymar.paez": "Saymar Paez", "yessenia.gonzalez": "Yessenia Gonzalez" };
+
+    const norm = (s) => String(s||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    function getAgentId(name) { const c = norm(name); for(let key in AGENT_IDS) { if(c.includes(norm(key)) || norm(key).includes(c)) return AGENT_IDS[key]; } return "S/ID"; }
+    function mapAuxAgent(rawName) { if(!rawName) return ""; let lower = rawName.toLowerCase().trim(); if(AUX_MAPPING[lower]) return AUX_MAPPING[lower]; if(lower.endsWith('.')) lower = lower.slice(0, -1); if(AUX_MAPPING[lower]) return AUX_MAPPING[lower]; let normName = norm(lower); if(AUX_MAPPING[normName]) return AUX_MAPPING[normName]; return cleanName(rawName); }
+    function cleanName(n) { return String(n||"").replace(/\./g, ' ').replace(/\s+/g, ' ').trim().toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, l => l.toUpperCase()); }
+    function getAuxService(name) { const clean = cleanName(name); for(const [srv, members] of Object.entries(AUX_SERVICES_MAP)) { if(members.some(m => cleanName(m).includes(clean) || clean.includes(cleanName(m)))) return srv; } return "Mesa Central"; }
+    
+    const pad = (n) => n?.toString().padStart(2, '0') || '00';
+    
+    function normalizeDate(val) { 
+        if(val === undefined || val === null || val === "") return ""; 
+        if(val instanceof Date) { if(!isNaN(val)) return val.toISOString().split('T')[0]; return ""; }
+        if(typeof val === 'number') {
+            if(val > 20000 && val < 300000) { const d = new Date(Math.round((val - 25569)*86400*1000)); if(!isNaN(d)) return d.toISOString().split('T')[0]; }
+            return ""; 
+        }
+        let s = String(val).trim(); if(s.includes(' ')) s = s.split(' ')[0]; 
+        if(s.includes('/') || s.includes('-')) { let sep = s.includes('/') ? '/' : '-'; const p = s.split(sep); if(p.length === 3) { if(p[0].length === 4) return `${p[0]}-${pad(p[1])}-${pad(p[2])}`; if(p[2].length === 4) return `${p[2]}-${pad(p[1])}-${pad(p[0])}`; } } 
+        if(s.includes('T')) return s.split('T')[0]; 
+        return s; 
+    }
+
+    function extractDateAndTime(val) { 
+        if (val === undefined || val === null || val === "") return { date: '', time: '' }; 
+        if (typeof val === 'number') { 
+            if(val > 20000 && val < 300000) { const d = new Date(Math.round((val - 25569) * 86400 * 1000)); if(!isNaN(d)) return { date: d.toISOString().split('T')[0], time: d.toISOString().split('T')[1].substr(0,8) }; }
+            return { date: '', time: '' };
+        } 
+        let s = String(val).trim(); let datePart = s, timePart = ''; 
+        if (s.includes(' ')) { const parts = s.split(' '); datePart = parts[0]; timePart = parts[1]; } else if (s.includes('T')) { const parts = s.split('T'); datePart = parts[0]; timePart = parts[1].replace('Z',''); } 
+        if(datePart.includes('/') || datePart.includes('-')) { let sep = datePart.includes('/') ? '/' : '-'; const p = datePart.split(sep); if(p.length === 3) { if(p[0].length === 4) datePart = `${p[0]}-${pad(p[1])}-${pad(p[2])}`; else if(p[2].length === 4) datePart = `${p[2]}-${pad(p[1])}-${pad(p[0])}`; } } 
+        return { date: datePart, time: timePart.substr(0,8) }; 
+    }
+
+    function timeToSec(val) { if(val === undefined || val === null || val === "") return 0; if(typeof val === 'number') return Math.round(val * 86400); const s = String(val).trim(); if(s.includes(':')) { const p = (s.split(' ')[1] || s).split(':').map(Number); return (p[0]||0)*3600 + (p[1]||0)*60 + (p[2]||0); } return 0; }
+    function secToTime(s, short=false) { if(!s || isNaN(s) || s<0) return short?"00:00":"00:00:00"; const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=Math.floor(s%60); return short ? `${pad(m)}:${pad(sec)}` : `${pad(h)}:${pad(m)}:${pad(sec)}`; }
+    function getVal(row, keywords) { const keys = Object.keys(row); const k = keys.find(key => keywords.some(kw => key.toLowerCase() === kw.toLowerCase() || key.toLowerCase().includes(kw.toLowerCase()))); return k ? row[k] : undefined; }
+    function extractTime(str) { let t = String(str).trim(); if(t.includes(' ')) t = t.split(' ').pop(); else if(t.includes('T')) t = t.split('T')[1]; let p = t.split(':'); if(p.length >= 2) return p[0].padStart(2,'0') + ':' + p[1].padStart(2,'0'); return t.substr(0,5); }
+    function getDayOfWeek(dateString) { if(!dateString) return '-'; const d = new Date(dateString + 'T00:00:00'); const days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']; if(isNaN(d.getDay())) return '-'; return days[d.getDay()]; }
 
     window.addEventListener('DOMContentLoaded', () => {
         const savedUrl = localStorage.getItem('cc_dashboard_api_url');
@@ -740,27 +791,16 @@
                 let mappedAg = mapAuxAgent(agRaw);
                 
                 parsed.push({
-                    agente: agRaw,
-                    _a: mappedAg,
-                    _a_low: mappedAg.toLowerCase(),
-                    fecha: fe,
-                    _d: dt.date,
-                    _t: dt.time,
-                    estado: iEs >= 0 ? (row[iEs] ?? "") : "",
-                    sentido: iSe >= 0 ? (row[iSe] ?? "") : "",
-                    tiempo_de_espera: iTe >= 0 ? (row[iTe] ?? "") : "",
-                    tiempo_de_llamada: iTl >= 0 ? (row[iTl] ?? "") : "",
-                    observacion: iOb >= 0 ? (row[iOb] ?? "") : "",
-                    telefono: iTel >= 0 ? (row[iTel] ?? "") : "",
-                    nombre: iNom >= 0 ? (row[iNom] ?? "") : "",
-                    tutor: iTut >= 0 ? (row[iTut] ?? "") : "",
-                    tipificacion: iTip >= 0 ? (row[iTip] ?? "") : ""
+                    agente: agRaw, _a: mappedAg, _a_low: mappedAg.toLowerCase(), fecha: fe, _d: dt.date, _t: dt.time,
+                    estado: iEs >= 0 ? (row[iEs] ?? "") : "", sentido: iSe >= 0 ? (row[iSe] ?? "") : "",
+                    tiempo_de_espera: iTe >= 0 ? (row[iTe] ?? "") : "", tiempo_de_llamada: iTl >= 0 ? (row[iTl] ?? "") : "",
+                    observacion: iOb >= 0 ? (row[iOb] ?? "") : "", telefono: iTel >= 0 ? (row[iTel] ?? "") : "",
+                    nombre: iNom >= 0 ? (row[iNom] ?? "") : "", tutor: iTut >= 0 ? (row[iTut] ?? "") : "", tipificacion: iTip >= 0 ? (row[iTip] ?? "") : ""
                 });
             }
             RAW_DATA_CACHE.aux = parsed;
             auxLoaded = true;
         }
-
         window.analyzeData(RAW_DATA_CACHE.detail, RAW_DATA_CACHE.states, RAW_DATA_CACHE.digital, true);
     }
 
@@ -853,81 +893,27 @@
         }; reader.readAsArrayBuffer(file);
     }
 
-    function getManualSup(name) { const clean = cleanName(name); for(const [sup, members] of Object.entries(MANUAL_TEAMS)) { if(members.some(m => cleanName(m) === clean)) return sup; } return null; }
-    const norm = (s) => String(s||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    function getAgentId(name) { const c = norm(name); for(let key in AGENT_IDS) { if(c.includes(norm(key)) || norm(key).includes(c)) return AGENT_IDS[key]; } return "S/ID"; }
-    function mapAuxAgent(rawName) { if(!rawName) return ""; let lower = rawName.toLowerCase().trim(); if(AUX_MAPPING[lower]) return AUX_MAPPING[lower]; if(lower.endsWith('.')) lower = lower.slice(0, -1); if(AUX_MAPPING[lower]) return AUX_MAPPING[lower]; let normName = norm(lower); if(AUX_MAPPING[normName]) return AUX_MAPPING[normName]; return cleanName(rawName); }
-    const pad = (n) => n?.toString().padStart(2, '0') || '00';
-    
-    function normalizeDate(val) { 
-        if(val === undefined || val === null || val === "") return ""; 
-        if(val instanceof Date) { if(!isNaN(val)) return val.toISOString().split('T')[0]; return ""; }
-        if(typeof val === 'number') {
-            if(val > 20000 && val < 300000) { const d = new Date(Math.round((val - 25569)*86400*1000)); if(!isNaN(d)) return d.toISOString().split('T')[0]; }
-            return ""; 
-        }
-        let s = String(val).trim(); if(s.includes(' ')) s = s.split(' ')[0]; 
-        if(s.includes('/') || s.includes('-')) { let sep = s.includes('/') ? '/' : '-'; const p = s.split(sep); if(p.length === 3) { if(p[0].length === 4) return `${p[0]}-${pad(p[1])}-${pad(p[2])}`; if(p[2].length === 4) return `${p[2]}-${pad(p[1])}-${pad(p[0])}`; } } 
-        if(s.includes('T')) return s.split('T')[0]; 
-        return s; 
-    }
-
-    function extractDateAndTime(val) { 
-        if (val === undefined || val === null || val === "") return { date: '', time: '' }; 
-        if (typeof val === 'number') { 
-            if(val > 20000 && val < 300000) { const d = new Date(Math.round((val - 25569) * 86400 * 1000)); if(!isNaN(d)) return { date: d.toISOString().split('T')[0], time: d.toISOString().split('T')[1].substr(0,8) }; }
-            return { date: '', time: '' };
-        } 
-        let s = String(val).trim(); let datePart = s, timePart = ''; 
-        if (s.includes(' ')) { const parts = s.split(' '); datePart = parts[0]; timePart = parts[1]; } else if (s.includes('T')) { const parts = s.split('T'); datePart = parts[0]; timePart = parts[1].replace('Z',''); } 
-        if(datePart.includes('/') || datePart.includes('-')) { let sep = datePart.includes('/') ? '/' : '-'; const p = datePart.split(sep); if(p.length === 3) { if(p[0].length === 4) datePart = `${p[0]}-${pad(p[1])}-${pad(p[2])}`; else if(p[2].length === 4) datePart = `${p[2]}-${pad(p[1])}-${pad(p[0])}`; } } 
-        return { date: datePart, time: timePart.substr(0,8) }; 
-    }
-
-    function timeToSec(val) { if(val === undefined || val === null || val === "") return 0; if(typeof val === 'number') return Math.round(val * 86400); const s = String(val).trim(); if(s.includes(':')) { const p = (s.split(' ')[1] || s).split(':').map(Number); return (p[0]||0)*3600 + (p[1]||0)*60 + (p[2]||0); } return 0; }
-    function secToTime(s, short=false) { if(!s || isNaN(s) || s<0) return short?"00:00":"00:00:00"; const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=Math.floor(s%60); return short ? `${pad(m)}:${pad(sec)}` : `${pad(h)}:${pad(m)}:${pad(sec)}`; }
-    function cleanName(n) { return String(n||"").replace(/\./g, ' ').replace(/\s+/g, ' ').trim().toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, l => l.toUpperCase()); }
-    function getVal(row, keywords) { const keys = Object.keys(row); const k = keys.find(key => keywords.some(kw => key.toLowerCase() === kw.toLowerCase() || key.toLowerCase().includes(kw.toLowerCase()))); return k ? row[k] : undefined; }
-    function extractTime(str) { let t = String(str).trim(); if(t.includes(' ')) t = t.split(' ').pop(); else if(t.includes('T')) t = t.split('T')[1]; let p = t.split(':'); if(p.length >= 2) return p[0].padStart(2,'0') + ':' + p[1].padStart(2,'0'); return t.substr(0,5); }
-
-    function getDayOfWeek(dateString) {
-        if(!dateString) return '-';
-        const d = new Date(dateString + 'T00:00:00');
-        const days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-        if(isNaN(d.getDay())) return '-';
-        return days[d.getDay()];
-    }
-
     window.evaluateQuality = function(obs, tel, tip, nom, tut) {
         if (!obs) return 'vacia';
-        let o = String(obs).trim().toLowerCase();
-        let t = String(tel).trim().toLowerCase();
-        let tp = String(tip).trim().toLowerCase();
-        let n = String(nom).trim().toLowerCase();
-        let tu = String(tut).trim().toLowerCase();
-
+        let o = String(obs).trim().toLowerCase(); let t = String(tel).trim().toLowerCase(); let tp = String(tip).trim().toLowerCase(); let n = String(nom).trim().toLowerCase(); let tu = String(tut).trim().toLowerCase();
         if (o === '' || o === 'null' || o === 'undefined' || o === 'n/a' || o === '-' || o === '0') return 'vacia';
         if (o === `${t} ${tp}`.trim() || o === `${t} ${tp}`) return 'vacia';
-
         if (o.length < 20) return 'roja';
         if (tp && o === tp) return 'roja';
         if (n && o === n) return 'roja';
         if (tu && o === tu) return 'roja';
         if (/(.)\1{4,}/.test(o)) return 'roja'; 
         if (/^(asd)+$/.test(o) || /^(qwe)+$/.test(o)) return 'roja';
-
         return 'verde';
     };
 
     window.analyzeData = function(detailRows, stateRows, digitalRows, resetUI = true) {
-        UNIQUE_AGENTS.clear(); const shiftMap = {}; const supervisorMap = {}; 
+        UNIQUE_AGENTS.clear(); const shiftMap = {};
         if (stateRows) { 
             stateRows.forEach(row => { 
                 const a = getVal(row, ['agente','nombre']); const f = getVal(row, ['fecha','dia']); 
                 if(a && f) { 
                     const key = `${cleanName(a)}|${normalizeDate(f)}`; 
-                    let sup = getManualSup(a); if(!sup) sup = getVal(row, ['supervisor', 'team leader', 'jefe']); 
-                    if(sup) supervisorMap[cleanName(a)] = cleanName(sup); 
                     const startRule = getVal(row, ['inicio turnor regla', 'entrada planificada', 'turno inicio']); 
                     const endRule = getVal(row, ['fin turno regla', 'salida planificada', 'turno fin']); 
                     const enLinea = getVal(row, ['en linea', 'en_linea']); 
@@ -938,25 +924,21 @@
         
         const digitalMap = {}; if (digitalRows) { digitalRows.forEach(row => { const f=getVal(row, ['fecha']), a=getVal(row, ['agente']), h=getVal(row, ['horas']); if(f&&a&&h) { const key=`${cleanName(a)}|${normalizeDate(f)}`; digitalMap[key]=(digitalMap[key]||0) + parseFloat(h)*3600; } }); }
         
-        // V69: GLOBAL BOT EXCLUSION IN DETAIL ROWS
         const groups = {}; 
         if (detailRows) { 
             detailRows.forEach(row => { 
                 const a=getVal(row, ['agente']), f=getVal(row, ['fecha']); 
                 if(!a) return; 
-                const name=cleanName(a);
-                const nameLow = name.toLowerCase();
+                const name=cleanName(a); const nameLow = name.toLowerCase();
                 if (nameLow.includes('agente ivr') || nameLow.includes('agente ia') || nameLow.startsWith('bot')) return;
-
                 const date=normalizeDate(f), key=`${name}|${date}`; 
                 UNIQUE_AGENTS.add(name); 
                 if(!groups[key]) groups[key]={agent:name, date:date, regs:[]}; 
-                groups[key].regs.push({ estado:String(getVal(row,['estado'])||"").toLowerCase(), inicio:getVal(row,['inicio']), tiempo:getVal(row,['tiempo']) }); 
+                groups[key].regs.push({ estado:String(getVal(row,['estado'])||"").toLowerCase(), inicio:getVal(row,['inicio']), tiempo:getVal(row,['tiempo']), fin:getVal(row,['fin']) }); 
             }); 
         }
         
-        let allValidDates = new Set();
-        const groupedAux = {}; 
+        let allValidDates = new Set(); const groupedAux = {}; 
         if(RAW_DATA_CACHE.aux) { 
             RAW_DATA_CACHE.aux.forEach(r => { 
                 if(!r._d) { const dt = extractDateAndTime(r.fecha); r._d = dt.date; r._t = dt.time; }
@@ -971,10 +953,9 @@
         }
 
         GLOBAL_DATA = Object.values(groups).map(g => {
-            let sup = getManualSup(g.agent); if(!sup) sup = supervisorMap[g.agent] || "Sin Asignar";
-            const stats = { agente:g.agent, fecha:g.date, supervisor: sup, t_hablado_tel:0, t_hablado_digital:0, t_acw:0, t_almuerzo:0, t_break:0, t_bano:0, t_idle:0, t_cap:0, t_admin:0, c_calls:0, c_no_atendidas:0, contactabilidad:0, c_short_calls:0, t_conectado_real:0, t_contratado:0, t_contratado_base: 0, atraso: 0, desconexion: 0, turno_str: "-", login_real_str: "--:-- - --:--" };
+            const stats = { agente:g.agent, fecha:g.date, servicio: getAuxService(g.agent), t_hablado_tel:0, t_hablado_digital:0, t_acw:0, t_almuerzo:0, t_break:0, t_bano:0, t_idle:0, t_cap:0, t_admin:0, c_calls:0, c_no_atendidas:0, contactabilidad:0, c_short_calls:0, t_conectado_real:0, t_contratado:0, t_contratado_base: 0, atraso: 0, desconexion: 0, turno_str: "-", login_real_str: "--:-- - --:--" };
             if(g.date && g.date.length === 10) allValidDates.add(g.date);
-            let firstLogin = null, lastLogout = null; let firstLoginStr = "", lastLogoutStr = "";
+            let firstLogin = null, lastLogout = null, firstLoginStr = "", lastLogoutStr = "";
             g.regs.forEach(r => {
                 const s=norm(r.estado), dur=timeToSec(r.tiempo), start=timeToSec(r.inicio);
                 if(s.includes('gestion llamada')) { stats.t_hablado_tel+=dur; stats.c_calls++; }
@@ -986,15 +967,11 @@
             if(firstLogin !== null && lastLogout !== null && lastLogout > firstLogin) { stats.t_conectado_real = lastLogout - firstLogin; stats.login_real_str = `${extractTime(firstLoginStr)} - ${extractTime(lastLogoutStr)}`; } 
             else { stats.t_conectado_real = stats.t_hablado_tel+stats.t_acw+stats.t_break+stats.t_almuerzo+stats.t_bano+stats.t_idle+stats.t_cap+stats.t_admin; }
 
-            const key = `${cleanName(g.agent)}|${g.date}`; 
-            stats.aux_logs = groupedAux[key] || [];
-
+            const key = `${cleanName(g.agent)}|${g.date}`; stats.aux_logs = groupedAux[key] || [];
             if(digitalMap[key]) stats.t_hablado_digital = digitalMap[key]; 
             stats.t_hablado = stats.t_hablado_tel + stats.t_hablado_digital;
             
-            const shift = shiftMap[key]; 
-            stats.t_en_linea = 0;
-            
+            const shift = shiftMap[key]; stats.t_en_linea = 0;
             if(shift) { 
                 stats.t_en_linea = shift.en_linea ? timeToSec(shift.en_linea) : 0; 
                 if(shift.start && shift.end && !String(shift.start).includes('sin')) { const s=timeToSec(shift.start), e=timeToSec(shift.end); if(e>s) stats.t_contratado=e-s; } if(shift.ruleStart && shift.ruleEnd) { stats.turno_str = `${extractTime(shift.ruleStart)} - ${extractTime(shift.ruleEnd)}`; const rs = timeToSec(shift.ruleStart), re = timeToSec(shift.ruleEnd); if(firstLogin !== null && firstLogin > rs) stats.atraso = firstLogin - rs; if(lastLogout !== null && lastLogout < re) stats.desconexion = re - lastLogout; } else if (shift.start && shift.end) { stats.turno_str = `${extractTime(shift.start)} - ${extractTime(shift.end)}`; } 
@@ -1005,7 +982,9 @@
             return stats;
         });
 
-        const dl = document.getElementById('agentsList'); if(dl){ dl.innerHTML = ''; [...UNIQUE_AGENTS].sort().forEach(a => { const op = document.createElement('option'); op.value = a; dl.appendChild(op); }); }
+        const dl = document.getElementById('agentsList'); const axl = document.getElementById('auxAgentsList');
+        if(dl) dl.innerHTML = ''; if(axl) axl.innerHTML = '';
+        [...UNIQUE_AGENTS].sort().forEach(a => { if(dl) dl.innerHTML += `<option value="${a}"></option>`; if(axl) axl.innerHTML += `<option value="${a}"></option>`; });
         
         let sortedDates = [...allValidDates].sort();
         if(resetUI && sortedDates.length > 0) { 
@@ -1015,11 +994,7 @@
             window.applyFilters();
             window.renderQualityDashboard();
             window.renderTrafficDashboard();
-        }
-        
-        const a1 = document.getElementById('cmpA1'), a2 = document.getElementById('cmpA2'), a3 = document.getElementById('cmpA3');
-        if(a1 && a2 && a3 && a1.options.length <= 1) {
-            [...UNIQUE_AGENTS].sort().forEach(a => { a1.innerHTML += `<option value="${a}">${a}</option>`; a2.innerHTML += `<option value="${a}">${a}</option>`; a3.innerHTML += `<option value="${a}">${a}</option>`; });
+            window.renderAuxDashboard();
         }
     }
 
@@ -1030,36 +1005,30 @@
     window.setFullRange = function() { 
         if(minDate) { 
             const dS = document.getElementById('dateStart'); const dE = document.getElementById('dateEnd'); 
-            const axD = document.getElementById('auxDate');
+            const axDS = document.getElementById('auxDateStart'); const axDE = document.getElementById('auxDateEnd');
             const qS = document.getElementById('qDateStart'); const qE = document.getElementById('qDateEnd'); 
             const tS = document.getElementById('tDateStart'); const tE = document.getElementById('tDateEnd'); 
-            
             if(dS) dS.value = minDate; if(dE) dE.value = maxDate; 
-            if(axD && !axD.value) axD.value = maxDate;
+            if(axDS) axDS.value = minDate; if(axDE) axDE.value = maxDate;
             if(qS) qS.value = minDate; if(qE) qE.value = maxDate; 
             if(tS) tS.value = minDate; if(tE) tE.value = maxDate; 
-            
-            window.applyFilters(); 
-            window.renderQualityDashboard();
-            window.renderTrafficDashboard();
+            window.applyFilters(); window.renderQualityDashboard(); window.renderTrafficDashboard(); window.renderAuxDashboard();
         } 
     }
     
     window.clearFilters = function() { 
-        const a=document.getElementById('agentSearch'), s=document.getElementById('supervisorFilter'), fS=document.getElementById('filterSentido'), fE=document.getElementById('filterEstadoCall'); 
+        const a=document.getElementById('agentSearch'), s=document.getElementById('serviceFilter'), fS=document.getElementById('filterSentido'), fE=document.getElementById('filterEstadoCall'); 
         if(a)a.value=''; if(s)s.value=''; if(fS)fS.value=''; if(fE)fE.value=''; 
         SHOW_ONLY_FEEDBACK = false; document.getElementById('btnToggleFeed')?.classList.remove('btn-active'); 
-        
         const qa = document.getElementById('qAgentSearch'), qs = document.getElementById('qSentido'), qe = document.getElementById('qEstado'), qc = document.getElementById('qStatusFilter'), qmin = document.getElementById('qMinDur'), qmax = document.getElementById('qMaxDur');
         if(qa)qa.value=''; if(qs)qs.value=''; if(qe)qe.value='atendida'; if(qc)qc.value=''; if(qmin)qmin.value=''; if(qmax)qmax.value='';
-        
         window.setFullRange(); 
     }
     
     window.clearAgentSearch = function() { const a = document.getElementById('agentSearch'); if(a) { a.value = ''; window.applyFilters(); } }
     window.toggleFeedbackFilter = function() { SHOW_ONLY_FEEDBACK = !SHOW_ONLY_FEEDBACK; const btn = document.getElementById('btnToggleFeed'); if(SHOW_ONLY_FEEDBACK) btn?.classList.add('btn-active'); else btn?.classList.remove('btn-active'); window.applyFilters(); }
     window.setAgentFilter = function(name) { const a = document.getElementById('agentSearch'); if(a) { a.value = name; window.applyFilters(); } }
-    window.filterBySupCard = function(supName) { const s = document.getElementById('supervisorFilter'); if(s) { s.value = supName; window.applyFilters(); document.querySelectorAll('.clickable-card').forEach(c => c.classList.remove('selected-sup')); event.currentTarget.classList.add('selected-sup'); } }
+    window.filterByServiceCard = function(srvName) { const s = document.getElementById('serviceFilter'); if(s) { s.value = srvName; window.applyFilters(); document.querySelectorAll('.clickable-card').forEach(c => c.classList.remove('selected-sup')); event.currentTarget.classList.add('selected-sup'); } }
 
     window.applyFilters = function() {
         SHORT_CALL_THRESHOLD = parseInt(document.getElementById('shortCallThreshold')?.value) || 45;
@@ -1071,7 +1040,7 @@
         const s = document.getElementById('dateStart')?.value || '';
         const e = document.getElementById('dateEnd')?.value || '';
         const term = (document.getElementById('agentSearch')?.value || '').toLowerCase();
-        const sup = (document.getElementById('supervisorFilter')?.value || '').toLowerCase();
+        const srv = (document.getElementById('serviceFilter')?.value || '').toLowerCase();
         
         document.getElementById('btnClearAgentFilter')?.classList.toggle('hidden', term === '');
 
@@ -1085,11 +1054,9 @@
                 fAux.forEach(r => {
                     const isBot = r._a_low.includes('agente ivr') || r._a_low.includes('agente ia') || r._a_low.startsWith('bot');
                     if (isBot) return;
-
                     const tLla = timeToSec(r.tiempo_de_llamada), st = String(r.estado).toLowerCase().trim();
                     let isAt = (st.includes('atendida') || st.includes('conectad') || st === 'ok' || st === '' || tLla > 0) && !st.includes('no-atendida') && !st.includes('no atendida') && !st.includes('abandonada') && !st.includes('falla');
-                    if (isAt) { 
-                        atend_c++; tmo_t += tLla; new_t_hab += tLla; if(tLla > 0 && tLla < SHORT_CALL_THRESHOLD) cort_c++;
+                    if (isAt) { atend_c++; tmo_t += tLla; new_t_hab += tLla; if(tLla > 0 && tLla < SHORT_CALL_THRESHOLD) cort_c++;
                     } else no_atend_c++;
                 });
                 d.c_calls = atend_c; d.c_no_atendidas = no_atend_c; d.contactabilidad = (atend_c + no_atend_c) > 0 ? (atend_c / (atend_c + no_atend_c)) * 100 : 0; d.c_short_calls = cort_c; d.t_hablado_tel = new_t_hab; d.t_hablado = new_t_hab + d.t_hablado_digital; d.t_acw = Math.max(0, d.t_hablado_tel_orig - new_t_hab); d.tmo = d.c_calls > 0 ? tmo_t / d.c_calls : 0;
@@ -1097,15 +1064,13 @@
             } else { d.c_calls = d.c_calls_orig; d.c_no_atendidas = 0; d.contactabilidad = 0; d.t_hablado_tel = d.t_hablado_tel_orig; d.t_hablado = d.t_hablado_tel + d.t_hablado_digital; d.t_acw = d.t_acw_orig; d.idle_avg = d.c_calls > 0 ? d.t_acw / d.c_calls : 0; d.tmo = d.c_calls > 0 ? d.t_hablado_tel / d.c_calls : 0; d.c_short_calls = 0; }
             
             d.p_en_linea = (d.c_calls + d.c_no_atendidas) > 0 ? d.t_en_linea / (d.c_calls + d.c_no_atendidas) : 0;
-            
             d.occ = d.t_conectado_real > 0 ? ((d.t_hablado + d.t_acw) / d.t_conectado_real) * 100 : 0; const t_alm = d.t_almuerzo>0 ? (d.t_almuerzo<=2700?1800:3600) : 0; let base_p = (d.t_contratado > 0 ? d.t_contratado : d.t_conectado_real) - t_alm; if(base_p <= 0 && d.t_conectado_real > 0) base_p = d.t_conectado_real - t_alm; d.base_calculo = base_p > 0 ? base_p : 0; d.prod = base_p > 0 ? (d.t_hablado / d.t_conectado_real) * 100 : 0; d.t_contratado_base = d.t_contratado > 0 ? d.t_contratado : d.t_conectado_real; d.adh = d.t_contratado_base > 0 ? (d.t_conectado_real / d.t_contratado_base) * 100 : (d.t_conectado_real > 0 ? 100 : 0);
-            
             d._excludeTotal = false;
             if (fSentido === 'entrante' || fSentido === 'saliente') { if (d.prod < 5 || d.tmo === 0 || d.contactabilidad === 0 || d.c_calls === 0) d._excludeTotal = true; }
         });
 
         FILTERED_DATA = GLOBAL_DATA.filter(d => {
-            let pass = (!s||d.fecha>=s) && (!e||d.fecha<=e) && (!term||d.agente.toLowerCase().includes(term)) && (!sup||d.supervisor.toLowerCase().includes(sup));
+            let pass = (!s||d.fecha>=s) && (!e||d.fecha<=e) && (!term||d.agente.toLowerCase().includes(term)) && (!srv||d.servicio.toLowerCase().includes(srv));
             if(SHOW_ONLY_FEEDBACK && !d.hasFeedback) pass = false;
             if(d._excludeTotal) pass = false;
             return pass;
@@ -1114,19 +1079,22 @@
         VISIBLE_ROWS = 20; window.renderAll();
     }
 
-    window.renderAll = function() { window.updateKPIs(); window.renderCharts(); window.renderRankCards(); window.renderTable(); window.updateSupervisorCards(); }
+    window.renderAll = function() { window.updateKPIs(); window.renderCharts(); window.renderRankCards(); window.renderTable(); window.updateServiceCards(); }
 
-    window.updateSupervisorCards = function() {
+    window.updateServiceCards = function() {
         const grid = document.getElementById('supGrid'); if(!grid) return; grid.innerHTML = '';
         const sD = document.getElementById('dateStart')?.value; const eD = document.getElementById('dateEnd')?.value;
-        Object.keys(MANUAL_TEAMS).forEach(sName => {
-            const team = GLOBAL_DATA.filter(d => d.supervisor === sName && (!sD || d.fecha >= sD) && (!eD || d.fecha <= eD) && !d._excludeTotal);
+        const services = ["Bloqueo", "Ingresos", "FDS", "Mesa Central"];
+        const colorsMap = { "Bloqueo":"blue", "Ingresos":"emerald", "FDS":"orange", "Mesa Central":"purple" };
+        
+        services.forEach(sName => {
+            const team = GLOBAL_DATA.filter(d => d.servicio === sName && (!sD || d.fecha >= sD) && (!eD || d.fecha <= eD) && !d._excludeTotal);
             let h=0, con=0, net=0, feed=0, calls=0, acw=0, h_tel=0, con_p=0, no_at=0;
             team.forEach(d => { h+=d.t_hablado; h_tel+=d.t_hablado_tel; con+=d.t_conectado_real; net+=d.base_calculo; acw+=d.t_acw; calls+=d.c_calls; no_at+=d.c_no_atendidas; con_p+=d.t_contratado_base; if(d.hasFeedback) feed++; });
             const prod = con?(h/con)*100:0; const adh = con_p>0?(con/con_p)*100:(con>0?100:0); const occ = con?((h+acw)/con)*100:0; const tmo = calls?h_tel/calls:0; 
             const idle = calls ? acw / calls : 0; 
-            const c = { "Luis Cataldo":"blue", "Angélica Ferrada":"pink", "Carla Cabrera":"orange", "Aracely Torres":"purple" }[sName] || "slate";
-            grid.innerHTML += `<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 clickable-card hover-card relative overflow-hidden" onclick="window.filterBySupCard('${sName}')"><div class="absolute right-0 top-0 h-full w-1 bg-${c}-500"></div><div class="flex justify-between items-start mb-3"><div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Equipo</p><h3 class="text-lg font-bold text-slate-800">${sName}</h3></div><div class="bg-${c}-100 text-${c}-700 px-2 py-1 rounded text-xs font-bold">${new Set(team.map(d=>d.agente)).size}</div></div><div class="grid grid-cols-3 gap-2 text-center text-xs mb-2"><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">Prod</p><p class="font-bold text-blue-600">${(Number(prod)||0).toFixed(0)}%</p></div><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">Adh</p><p class="font-bold text-teal-600">${(Number(adh)||0).toFixed(0)}%</p></div><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">Ocup</p><p class="font-bold text-orange-600">${(Number(occ)||0).toFixed(0)}%</p></div></div><div class="grid grid-cols-3 gap-2 text-center text-xs"><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">TMO</p><p class="font-bold text-indigo-600">${secToTime(tmo, true)}</p></div><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">P-ACW</p><p class="font-bold text-gray-600">${secToTime(idle, true)}</p></div><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">Feed</p><p class="font-bold text-purple-600">${feed}</p></div></div></div>`;
+            const c = colorsMap[sName] || "slate";
+            grid.innerHTML += `<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 clickable-card hover-card relative overflow-hidden" onclick="window.filterByServiceCard('${sName}')"><div class="absolute right-0 top-0 h-full w-1 bg-${c}-500"></div><div class="flex justify-between items-start mb-3"><div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Servicio</p><h3 class="text-lg font-bold text-slate-800">${sName}</h3></div><div class="bg-${c}-100 text-${c}-700 px-2 py-1 rounded text-xs font-bold">${new Set(team.map(d=>d.agente)).size} ag</div></div><div class="grid grid-cols-3 gap-2 text-center text-xs mb-2"><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">Prod</p><p class="font-bold text-blue-600">${(Number(prod)||0).toFixed(0)}%</p></div><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">Adh</p><p class="font-bold text-teal-600">${(Number(adh)||0).toFixed(0)}%</p></div><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">Ocup</p><p class="font-bold text-orange-600">${(Number(occ)||0).toFixed(0)}%</p></div></div><div class="grid grid-cols-3 gap-2 text-center text-xs"><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">TMO</p><p class="font-bold text-indigo-600">${secToTime(tmo, true)}</p></div><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">P-ACW</p><p class="font-bold text-gray-600">${secToTime(idle, true)}</p></div><div class="bg-slate-50 p-1 rounded border"><p class="text-[9px] text-slate-400">Feed</p><p class="font-bold text-purple-600">${feed}</p></div></div></div>`;
         });
     }
 
@@ -1153,10 +1121,7 @@
             const day = FILTERED_DATA.filter(d=>d.fecha===date); 
             let h=0, n=0, c=0, a=0, cl=0, cp=0, noat=0; 
             day.forEach(d=>{ h+=d.t_hablado; n+=d.base_calculo; c+=d.t_conectado_real; a+=d.t_acw; cl+=d.c_calls; noat+=d.c_no_atendidas; cp+=d.t_contratado_base; }); 
-            dP.push(c?(h/c)*100:0); 
-            dA.push(cp>0?(c/cp)*100:(c>0?100:0)); 
-            dO.push(c?((h+a)/c)*100:0); 
-            dI.push(cl ? a / cl : 0); 
+            dP.push(c?(h/c)*100:0); dA.push(cp>0?(c/cp)*100:(c>0?100:0)); dO.push(c?((h+a)/c)*100:0); dI.push(cl ? a / cl : 0); 
         });
         const canvas = document.getElementById('chartEvolution'); if(!canvas) return;
         if(charts['evolution']) charts['evolution'].destroy();
@@ -1180,18 +1145,40 @@
 
     window.renderTable = function() {
         const rowHead = document.getElementById('tableHeadRow'); if(!rowHead) return;
-        const cols = [ {l:"Fecha", k:"fecha"}, {l:"Agente", k:"agente"}, {l:"Turno", k:"turno_str"}, {l:"Login Real", k:"login_real_str"}, {l:"Conex.", k:"t_conectado_real"}, {l:"Atraso", k:"atraso"}, {l:"Desc.", k:"desconexion"}, {l:"Totales", k:"_totales"}, {l:"Atend", k:"c_calls"}, {l:"No Atend", k:"c_no_atendidas"}, {l:"Contac", k:"contactabilidad"}, {l:"Cortas", k:"c_short_calls"}, {l:"TMO", k:"tmo"}, {l:"Hablado", k:"t_hablado"}, {l:"En Línea", k:"t_en_linea"}, {l:"ACW", k:"t_acw"}, {l:"P-enlinea", k:"p_en_linea"}, {l:"P-ACW", k:"idle_avg"}, {l:"Cap", k:"t_cap"}, {l:"Adm", k:"t_admin"}, {l:"Bñ", k:"t_bano"}, {l:"Brk", k:"t_break"}, {l:"Alm", k:"t_almuerzo"}, {l:"Prod", k:"prod"}, {l:"Adh", k:"adh"}, {l:"Ocup", k:"occ"} ];
+        const isConsolidated = document.getElementById('chkConsolidate')?.checked;
+        const cols = [ {l:"Fecha/Rango", k:"fecha"}, {l:"Agente", k:"agente"}, {l:"Servicio", k:"servicio"}, {l:"Turno", k:"turno_str"}, {l:"Login Real", k:"login_real_str"}, {l:"Conex.", k:"t_conectado_real"}, {l:"Atraso", k:"atraso"}, {l:"Desc.", k:"desconexion"}, {l:"Totales", k:"_totales"}, {l:"Atend", k:"c_calls"}, {l:"No Atend", k:"c_no_atendidas"}, {l:"Contac", k:"contactabilidad"}, {l:"Cortas", k:"c_short_calls"}, {l:"TMO", k:"tmo"}, {l:"Hablado", k:"t_hablado"}, {l:"En Línea", k:"t_en_linea"}, {l:"ACW", k:"t_acw"}, {l:"P-enlinea", k:"p_en_linea"}, {l:"P-ACW", k:"idle_avg"}, {l:"Cap", k:"t_cap"}, {l:"Adm", k:"t_admin"}, {l:"Bñ", k:"t_bano"}, {l:"Brk", k:"t_break"}, {l:"Alm", k:"t_almuerzo"}, {l:"Prod", k:"prod"}, {l:"Adh", k:"adh"}, {l:"Ocup", k:"occ"} ];
         rowHead.innerHTML = cols.map(c => `<th class="px-2 py-3 cursor-pointer hover:bg-slate-200" onclick="window.sort('${c.k}')">${c.l}</th>`).join('');
+        
+        let dataToRender = FILTERED_DATA;
+        
+        if (isConsolidated) {
+            let grouped = {};
+            FILTERED_DATA.forEach(d => {
+                if(!grouped[d.agente]) { grouped[d.agente] = { ...d, count: 0, _t_conectado_real:0, _c_calls:0, _c_no_atendidas:0, _c_short_calls:0, _t_hablado:0, _t_en_linea:0, _t_acw:0, _t_cap:0, _t_admin:0, _t_bano:0, _t_break:0, _t_almuerzo:0, _base_calculo:0, _t_contratado_base:0, _atraso:0, _desconexion:0, _t_hablado_tel:0 }; }
+                let g = grouped[d.agente];
+                g.count++; g._t_conectado_real += d.t_conectado_real; g._c_calls += d.c_calls; g._c_no_atendidas += (d.c_no_atendidas || 0); g._c_short_calls += d.c_short_calls; g._t_hablado += d.t_hablado; g._t_hablado_tel += d.t_hablado_tel; g._t_en_linea += d.t_en_linea; g._t_acw += d.t_acw; g._t_cap += d.t_cap; g._t_admin += d.t_admin; g._t_bano += d.t_bano; g._t_break += d.t_break; g._t_almuerzo += d.t_almuerzo; g._base_calculo += d.base_calculo; g._t_contratado_base += d.t_contratado_base; g._atraso += d.atraso; g._desconexion += d.desconexion;
+            });
+            dataToRender = Object.values(grouped).map(g => {
+                g.t_conectado_real = g._t_conectado_real; g.c_calls = g._c_calls; g.c_no_atendidas = g._c_no_atendidas; g.c_short_calls = g._c_short_calls; g.t_hablado = g._t_hablado; g.t_hablado_tel = g._t_hablado_tel; g.t_en_linea = g._t_en_linea; g.t_acw = g._t_acw; g.t_cap = g._t_cap; g.t_admin = g._t_admin; g.t_bano = g._t_bano; g.t_break = g._t_break; g.t_almuerzo = g._t_almuerzo; g.atraso = g._atraso; g.desconexion = g._desconexion; g.base_calculo = g._base_calculo; g.t_contratado_base = g._t_contratado_base;
+                let totInt = g.c_calls + g.c_no_atendidas;
+                g.contactabilidad = totInt > 0 ? (g.c_calls / totInt)*100 : 0; g.tmo = g.c_calls > 0 ? g.t_hablado_tel / g.c_calls : 0; g.p_en_linea = totInt > 0 ? g.t_en_linea / totInt : 0; g.idle_avg = g.c_calls > 0 ? g.t_acw / g.c_calls : 0; g.prod = g.base_calculo > 0 ? (g.t_hablado / g.t_conectado_real)*100 : 0; g.adh = g.t_contratado_base > 0 ? (g.t_conectado_real / g.t_contratado_base)*100 : (g.t_conectado_real > 0 ? 100 : 0); g.occ = g.t_conectado_real > 0 ? ((g.t_hablado + g.t_acw) / g.t_conectado_real)*100 : 0;
+                g.fecha = 'Acumulado'; g.turno_str = '-'; g.login_real_str = '-';
+                return g;
+            });
+            if(sortCol) dataToRender.sort((a,b) => { let vA=sortCol==='_totales'?a.c_calls+(a.c_no_atendidas||0):a[sortCol], vB=sortCol==='_totales'?b.c_calls+(b.c_no_atendidas||0):b[sortCol]; if(typeof vA==='string'){vA=vA.toLowerCase();vB=vB.toLowerCase();} if(vA < vB) return -1 * sortAsc; if(vA > vB) return 1 * sortAsc; return 0; });
+        }
+
         const tb = document.getElementById('tableBody'); tb.innerHTML = '';
-        FILTERED_DATA.slice(0, VISIBLE_ROWS).forEach((d, idx) => {
-            const tr = document.createElement('tr'); tr.className = d.hasFeedback ? "feedback-done cursor-pointer" : "hover:bg-blue-50/30 bg-white cursor-pointer"; tr.onclick = ()=>window.toggleRowHighlight(`row-${idx}`); tr.id = `row-${idx}`;
+        dataToRender.slice(0, VISIBLE_ROWS).forEach((d, idx) => {
+            const tr = document.createElement('tr'); tr.className = d.hasFeedback && !isConsolidated ? "feedback-done cursor-pointer" : "hover:bg-blue-50/30 bg-white cursor-pointer"; tr.onclick = ()=>window.toggleRowHighlight(`row-${idx}`); tr.id = `row-${idx}`;
             let hDisp = secToTime(d.t_hablado), hCls = "text-green-700"; if(d.t_hablado_digital>0) { hDisp=`<span title="Tel: ${secToTime(d.t_hablado_tel)} | Wsp: ${secToTime(d.t_hablado_digital)}">📱 ${hDisp}</span>`; hCls="text-emerald-600 font-bold cursor-help"; }
             const atrasoStr = d.atraso > 1 ? `<span class="text-red-600 font-bold bg-red-100 px-1 rounded">${secToTime(d.atraso)}</span>` : '<span class="text-slate-300">-</span>'; const descStr = d.desconexion > 1 ? `<span class="text-red-600 font-bold bg-red-100 px-1 rounded">${secToTime(d.desconexion)}</span>` : '<span class="text-slate-300">-</span>';
-            const clsCap = d.t_cap > 60 ? "alert-cell-red" : ""; const clsAdm = d.t_admin > 60 ? "alert-cell-red" : ""; const clsBano = d.t_bano > 600 ? "alert-cell-red" : ""; const clsBrk = d.t_break > 1800 ? "alert-cell-orange" : ""; const clsAlm = d.t_almuerzo > 3600 ? "alert-cell-orange" : "";
+            const clsCap = d.t_cap > (isConsolidated?60*d.count:60) ? "alert-cell-red" : ""; const clsAdm = d.t_admin > (isConsolidated?60*d.count:60) ? "alert-cell-red" : ""; const clsBano = d.t_bano > (isConsolidated?600*d.count:600) ? "alert-cell-red" : ""; const clsBrk = d.t_break > (isConsolidated?1800*d.count:1800) ? "alert-cell-orange" : ""; const clsAlm = d.t_almuerzo > (isConsolidated?3600*d.count:3600) ? "alert-cell-orange" : "";
             const clsProd = d.prod < 70 ? "text-red-600 font-bold bg-red-50" : "text-teal-700 bg-teal-50"; const clsAdh = (d.adh < 90 || d.adh > 105) ? "text-red-600 font-bold bg-red-50" : "text-teal-700"; const clsOcc = (d.occ < 95 || d.occ > 105) ? "text-red-600 font-bold bg-orange-50" : "text-orange-700"; 
             tr.innerHTML = `
-                <td class="px-2 py-3 font-mono whitespace-nowrap">${d.fecha}</td>
-                <td class="px-2 py-3 font-bold cursor-pointer text-blue-600 hover:underline" onclick="window.openFeedbackModal('${d.agente}', '${d.fecha}'); event.stopPropagation();">${d.hasFeedback?'<i class="fas fa-check-circle text-green-600 mr-1"></i>':''}${d.agente}</td>
+                <td class="px-2 py-3 font-mono whitespace-nowrap">${isConsolidated ? '<span class="bg-blue-100 text-blue-700 font-bold px-1 rounded">ACUMULADO</span>' : d.fecha}</td>
+                <td class="px-2 py-3 font-bold cursor-pointer text-blue-600 hover:underline" onclick="window.openFeedbackModal('${d.agente}', '${d.fecha}'); event.stopPropagation();">${d.hasFeedback && !isConsolidated ?'<i class="fas fa-check-circle text-green-600 mr-1"></i>':''}${d.agente}</td>
+                <td class="px-2 py-3 text-center text-[10px] font-bold text-slate-500 uppercase bg-slate-50/50">${d.servicio}</td>
                 <td class="px-2 py-3 text-center bg-blue-50/30">${d.turno_str}</td>
                 <td class="px-2 py-3 text-center">${d.login_real_str}</td>
                 <td class="px-2 py-3 text-center font-bold text-indigo-700 bg-indigo-50/30 border-r">${secToTime(d.t_conectado_real)}</td>
@@ -1219,13 +1206,13 @@
             `;
             tb.appendChild(tr);
         });
-        const rc = document.getElementById('rowCount'); if(rc) rc.innerText = FILTERED_DATA.length + ' reg';
-        document.getElementById('btnLoadMore')?.classList.toggle('hidden', VISIBLE_ROWS >= FILTERED_DATA.length);
+        const rc = document.getElementById('rowCount'); if(rc) rc.innerText = dataToRender.length + ' reg';
+        document.getElementById('btnLoadMore')?.classList.toggle('hidden', VISIBLE_ROWS >= dataToRender.length);
     }
 
     window.toggleRowHighlight = function(id) { if(highlightedRowId === id) { document.getElementById(id)?.classList.remove('highlight-row'); highlightedRowId = null; } else { if(highlightedRowId) document.getElementById(highlightedRowId)?.classList.remove('highlight-row'); document.getElementById(id)?.classList.add('highlight-row'); highlightedRowId = id; } }
     window.toggleCardSort = function(k) { cardSortState[k] *= -1; window.renderRankCards(); }
-    window.sort = function(key) { if(sortCol === key) sortAsc *= -1; else { sortCol = key; sortAsc = 1; } FILTERED_DATA.sort((a,b) => { let vA=key==='_totales'?a.c_calls+(a.c_no_atendidas||0):a[key], vB=key==='_totales'?b.c_calls+(b.c_no_atendidas||0):b[key]; if(typeof vA==='string'){vA=vA.toLowerCase();vB=vB.toLowerCase();} if(vA < vB) return -1 * sortAsc; if(vA > vB) return 1 * sortAsc; return 0; }); window.renderTable(); }
+    window.sort = function(key) { if(sortCol === key) sortAsc *= -1; else { sortCol = key; sortAsc = 1; } window.renderTable(); }
     
     window.switchTab = function(t) { 
         const tabs = ['main', 'aux', 'quality', 'traffic'];
@@ -1234,13 +1221,8 @@
             document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}Content`)?.classList.toggle('hidden', t !== tab);
             const btn = document.getElementById(`tabBtn${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
             if(btn) {
-                if(t === tab) {
-                    btn.classList.add(`border-${colors[tab]}-600`, `text-${colors[tab]}-600`);
-                    btn.classList.remove('border-transparent', 'text-slate-500');
-                } else {
-                    btn.classList.remove(`border-${colors[tab]}-600`, `text-${colors[tab]}-600`);
-                    btn.classList.add('border-transparent', 'text-slate-500');
-                }
+                if(t === tab) { btn.classList.add(`border-${colors[tab]}-600`, `text-${colors[tab]}-600`); btn.classList.remove('border-transparent', 'text-slate-500'); } 
+                else { btn.classList.remove(`border-${colors[tab]}-600`, `text-${colors[tab]}-600`); btn.classList.add('border-transparent', 'text-slate-500'); }
             }
         });
         if(t === 'aux') window.renderAuxDashboard();
@@ -1256,237 +1238,246 @@
         if(FILTERED_DATA.length === 0) return Swal.fire("Atención", "No hay datos para exportar.", "warning");
         const grouped = {};
         FILTERED_DATA.forEach(d => {
-            if(!grouped[d.agente]) { grouped[d.agente] = { name: d.agente, sup: d.supervisor, h: 0, net: 0, con: 0, con_plan: 0, acw: 0, calls: 0, no_atend: 0, h_tel: 0, en_linea: 0 }; }
+            if(!grouped[d.agente]) { grouped[d.agente] = { name: d.agente, sup: d.servicio, h: 0, net: 0, con: 0, con_plan: 0, acw: 0, calls: 0, no_atend: 0, h_tel: 0, en_linea: 0 }; }
             grouped[d.agente].h += d.t_hablado; grouped[d.agente].net += d.base_calculo; grouped[d.agente].con += d.t_conectado_real; grouped[d.agente].con_plan += d.t_contratado_base; grouped[d.agente].acw += d.t_acw; grouped[d.agente].calls += d.c_calls; grouped[d.agente].no_atend += (d.c_no_atendidas || 0); grouped[d.agente].h_tel += d.t_hablado_tel; grouped[d.agente].en_linea += d.t_en_linea;
         });
         const exportData = Object.values(grouped).map(g => {
-            const prod = g.con ? (g.h / g.con) : 0; const adh = g.con_plan ? (g.con / g.con_plan) : (g.con > 0 ? 1 : 0); const occ = g.con ? ((g.h + g.acw) / g.con) : 0; const tmo = g.calls ? (g.h_tel / g.calls) : 0; 
-            const idle = g.calls ? (g.acw / g.calls) : 0; 
-            const p_enlinea = (g.calls + g.no_atend) > 0 ? (g.en_linea / (g.calls + g.no_atend)) : 0;
-            const contact = (g.calls + g.no_atend) > 0 ? (g.calls / (g.calls + g.no_atend)) * 100 : 0;
-            return { "ID": getAgentId(g.name), "Nombre": g.name, "Supervisor": g.sup, "Productividad": (Number(prod * 100)||0).toFixed(1) + "%", "Adherencia": (Number(adh * 100)||0).toFixed(1) + "%", "Ocupación": (Number(occ * 100)||0).toFixed(1) + "%", "TMO": secToTime(tmo, true), "En Línea": secToTime(g.en_linea), "P-enlinea": secToTime(p_enlinea, true), "P-ACW": secToTime(idle, true), "Atendidas": g.calls, "No Atendidas": g.no_atend, "Contactabilidad": (Number(contact)||0).toFixed(1) + "%" };
+            const prod = g.con ? (g.h / g.con) : 0; const adh = g.con_plan ? (g.con / g.con_plan) : (g.con > 0 ? 1 : 0); const occ = g.con ? ((g.h + g.acw) / g.con) : 0; const tmo = g.calls ? (g.h_tel / g.calls) : 0; const idle = g.calls ? (g.acw / g.calls) : 0; const p_enlinea = (g.calls + g.no_atend) > 0 ? (g.en_linea / (g.calls + g.no_atend)) : 0; const contact = (g.calls + g.no_atend) > 0 ? (g.calls / (g.calls + g.no_atend)) * 100 : 0;
+            return { "ID": getAgentId(g.name), "Nombre": g.name, "Servicio": g.sup, "Productividad": (Number(prod * 100)||0).toFixed(1) + "%", "Adherencia": (Number(adh * 100)||0).toFixed(1) + "%", "Ocupación": (Number(occ * 100)||0).toFixed(1) + "%", "TMO": secToTime(tmo, true), "En Línea": secToTime(g.en_linea), "P-enlinea": secToTime(p_enlinea, true), "P-ACW": secToTime(idle, true), "Atendidas": g.calls, "No Atendidas": g.no_atend, "Contactabilidad": (Number(contact)||0).toFixed(1) + "%" };
         });
         const ws = XLSX.utils.json_to_sheet(exportData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Resumen_Ejecutivos"); XLSX.writeFile(wb, "Resumen_Ejecutivos.xlsx");
     };
 
+    window.addAuxAgent = function(name) { if(!name) return; let cName = cleanName(name); if(!selectedAuxAgents.includes(cName)) { selectedAuxAgents.push(cName); document.getElementById('auxAgentSearch').value = ''; window.renderAuxDashboard(); } }
+    window.removeAuxAgent = function(name) { selectedAuxAgents = selectedAuxAgents.filter(a => a !== name); window.renderAuxDashboard(); }
+
+    window.handleAuxServiceChange = function() {
+        const srv = document.getElementById('auxServiceFilter').value;
+        if(srv) {
+            selectedAuxAgents = []; 
+            if(srv === "Mesa Central") { [...UNIQUE_AGENTS].forEach(a => { if(getAuxService(a) === "Mesa Central") selectedAuxAgents.push(cleanName(a)); }); } 
+            else { AUX_SERVICES_MAP[srv].forEach(a => { const normA = cleanName(a); [...UNIQUE_AGENTS].forEach(uA => { if(cleanName(uA).includes(normA)) selectedAuxAgents.push(cleanName(uA)); }); }); }
+            selectedAuxAgents = [...new Set(selectedAuxAgents)];
+        } else selectedAuxAgents = [];
+        window.renderAuxDashboard();
+    }
+
+    window.toggleAccordion = function(id, btn) { const tr = document.getElementById(id); if(tr) { if(tr.classList.contains('hidden')) { tr.classList.remove('hidden'); btn.innerText = '[-]'; } else { tr.classList.add('hidden'); btn.innerText = '[+]'; } } }
     window.toggleAuxCol = function(id) { auxVisCols[id] = !auxVisCols[id]; window.renderAuxDashboard(); }
     window.handleDragStart = function(e, id) { auxDragSrcEl = id; e.dataTransfer.effectAllowed = 'move'; }
     window.handleDragOver = function(e) { if(e.preventDefault) e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }
-    window.handleDrop = function(e, id) {
-        if(e.stopPropagation) e.stopPropagation();
-        if(auxDragSrcEl !== id) {
-            let srcIdx = auxColOrder.indexOf(auxDragSrcEl), tgtIdx = auxColOrder.indexOf(id);
-            let temp = auxColOrder[srcIdx]; auxColOrder.splice(srcIdx, 1); auxColOrder.splice(tgtIdx, 0, temp);
-            window.renderAuxDashboard();
-        }
-        return false;
-    }
+    window.handleDrop = function(e, id) { if(e.stopPropagation) e.stopPropagation(); if(auxDragSrcEl !== id) { let srcIdx = auxColOrder.indexOf(auxDragSrcEl), tgtIdx = auxColOrder.indexOf(id); let temp = auxColOrder[srcIdx]; auxColOrder.splice(srcIdx, 1); auxColOrder.splice(tgtIdx, 0, temp); window.renderAuxDashboard(); } return false; }
 
     window.renderAuxDashboard = function() {
         if(!RAW_DATA_CACHE.aux || !RAW_DATA_CACHE.aux.length) return;
-        const dF = document.getElementById('auxDate')?.value || '', tS = document.getElementById('auxTimeStart')?.value || '', tE = document.getElementById('auxTimeEnd')?.value || '', agent = (document.getElementById('auxAgentSearch')?.value || '').toLowerCase(), sent = (document.getElementById('auxSentido')?.value || '').toLowerCase(), intvF = document.getElementById('auxInterval')?.value || '';
+        const dS = document.getElementById('auxDateStart')?.value || '';
+        const dE = document.getElementById('auxDateEnd')?.value || '';
+        const sent = (document.getElementById('auxSentido')?.value || '').toLowerCase();
+        const intvF = document.getElementById('auxInterval')?.value || '';
+        const agColors = ['blue', 'emerald', 'orange', 'rose'];
         
-        let filtered = RAW_DATA_CACHE.aux.filter(r => { 
+        const pillsDiv = document.getElementById('auxSelectedPills');
+        pillsDiv.innerHTML = selectedAuxAgents.map((a, i) => `<span class="bg-${agColors[i%agColors.length]}-100 text-${agColors[i%agColors.length]}-800 text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 border border-${agColors[i%agColors.length]}-300">${a} <i class="fas fa-times cursor-pointer hover:text-red-500" onclick="window.removeAuxAgent('${a}')"></i></span>`).join('');
+
+        let filteredCalls = RAW_DATA_CACHE.aux.filter(r => { 
             const isBot = r._a_low.includes('agente ivr') || r._a_low.includes('agente ia') || r._a_low.startsWith('bot');
             if (isBot) return false;
-            return (!dF || r._d === dF) && (!tS || r._t >= tS) && (!tE || r._t <= tE) && (!agent || r._a_low.includes(agent)) && (!sent || String(r.sentido||'').toLowerCase().includes(sent)); 
+            if (dS && r._d < dS) return false;
+            if (dE && r._d > dE) return false;
+            if (sent && !String(r.sentido||'').toLowerCase().includes(sent)) return false;
+            if (selectedAuxAgents.length > 0) { let match = false; selectedAuxAgents.forEach(sa => { if(r._a_low.includes(sa.toLowerCase())) match = true; }); if(!match) return false; }
+            return true;
         });
-        
-        let atend=0, noat=0, dur=0; filtered.forEach(r => { const st=String(r.estado).toLowerCase().trim(), tL=timeToSec(r.tiempo_de_llamada); const isNoAt = st.includes('no-atendida') || st.includes('no atendida') || st.includes('abandonada') || st.includes('falla'); const isAt = !isNoAt && (st.includes('atendida') || st.includes('conectad') || st === 'ok' || st === '' || tL > 0); if(isNoAt) { noat++; } else if (isAt) { atend++; dur+=tL; } else { if(tL>0){atend++;dur+=tL;}else noat++; } });
-        const grid = document.getElementById('auxKpiGrid'); grid.innerHTML = ''; const add = (l, v) => grid.innerHTML += `<div class="bg-white p-4 rounded-xl border border-purple-200 shadow-sm text-center"><p class="text-[10px] font-bold text-slate-400 uppercase">${l}</p><p class="text-2xl font-bold text-purple-700">${v}</p></div>`;
-        add("Total Interacciones", filtered.length); add("Atendidas", atend); add("No Atendidas", noat); add("Hablado Aux", secToTime(dur)); add("TMO Aux", secToTime(atend?dur/atend:0, true)); add("Contactabilidad", (Number((atend+noat)?(atend/(atend+noat))*100:0)||0).toFixed(1)+'%');
 
-        const tb = document.getElementById('auxTableBody'), th = document.getElementById('auxTableHead'), title = document.getElementById('auxTableTitle');
-        
-        const colDefs = {
-            'col-fecha': { l:'Fecha', a:'left', c:'font-mono', r:(g)=>g.d || g._d },
-            'col-hora': { l: intvF ? 'Rango Horario' : 'Hora', a:'left', c:'font-mono bg-slate-100/50 font-bold', r:(g)=>g.i || g._t },
-            'col-agente': { l:'Agente', a:'left', c:'font-bold text-blue-600', r:(g)=>g.a || g._a },
-            'col-total': { l: intvF ? 'Totales' : 'Teléfono', a:'center', c:'text-slate-600', r:(g)=>intvF?g.t:(g.telefono||'-') },
-            'col-atend': { l: intvF ? 'Atendidas' : 'Estado', a:'center', c: intvF?'font-bold text-green-600 bg-green-50/30':(g=>String(g.estado).toLowerCase().includes('no')?'font-bold text-orange-600':'font-bold text-green-600'), r:(g)=>intvF?g.at:(g.estado||'OK') },
-            'col-noatend': { l: intvF ? 'No Atend.' : 'Sentido', a:'center', c: intvF?'font-bold text-orange-600 bg-orange-50/30':'uppercase text-[10px] text-slate-500', r:(g)=>intvF?g.no:(g.sentido||'-') },
-            'col-tmo': { l: intvF ? 'TMO' : 'Espera', a:'right', c:'font-mono text-purple-600', r:(g)=>intvF?secToTime(g.at?g.ds/g.at:0,true):(g.tiempo_de_espera||'00:00:00') },
-            'col-hablado': { l: intvF ? 'Suma Hablado' : 'Duración', a:'right', c:'font-mono text-indigo-600 font-bold', r:(g)=>intvF?secToTime(g.ds):(g.tiempo_de_llamada||'00:00:00') },
-            'col-contact': { l: intvF ? 'Contactabilidad' : '-', a:'right', c:'font-bold text-sky-600 bg-sky-50/30', r:(g)=>intvF?((Number((g.at+g.no)?(g.at/(g.at+g.no))*100:0)).toFixed(1)+'%'):'-' },
-            'col-pacw': { l: intvF ? 'P-ACW (Día)' : 'Observación', a:intvF?'right':'left', c:intvF?'font-mono text-gray-500 bg-gray-50/50':'text-[10px] text-slate-500 truncate max-w-[200px]', r:(g)=>{ if(intvF){ const gr=GLOBAL_DATA.find(x=>x.agente===g.a && x.fecha===g.d); return secToTime(gr?gr.idle_avg:0,true); } else { return g.observacion||''; } } }
-        };
+        let atend=0, noat=0, dur=0; filteredCalls.forEach(r => { const st=String(r.estado).toLowerCase().trim(), tL=timeToSec(r.tiempo_de_llamada); const isNoAt = st.includes('no-atendida') || st.includes('no atendida') || st.includes('abandonada') || st.includes('falla'); const isAt = !isNoAt && (st.includes('atendida') || st.includes('conectad') || st === 'ok' || st === '' || tL > 0); if(isNoAt) { noat++; } else if (isAt) { atend++; dur+=tL; } else { if(tL>0){atend++;dur+=tL;}else noat++; } });
+        const gridKpi = document.getElementById('auxKpiGrid'); gridKpi.innerHTML = ''; const add = (l, v) => gridKpi.innerHTML += `<div class="bg-white p-4 rounded-xl border border-purple-200 shadow-sm text-center"><p class="text-[10px] font-bold text-slate-400 uppercase">${l}</p><p class="text-2xl font-bold text-purple-700">${v}</p></div>`;
+        add("Total Interacciones", filteredCalls.length); add("Atendidas", atend); add("No Atendidas", noat); add("Hablado Aux", secToTime(dur)); add("TMO Aux", secToTime(atend?dur/atend:0, true)); add("Contactabilidad", (Number((atend+noat)?(atend/(atend+noat))*100:0)||0).toFixed(1)+'%');
 
-        title.innerHTML = intvF ? `<i class="fas fa-clock"></i> Resumen Agrupado cada ${intvF} Minutos` : '<i class="fas fa-list-alt"></i> Detalle de Llamadas'; 
+        const tb = document.getElementById('auxTableBody'); const th = document.getElementById('auxTableHead'); const title = document.getElementById('auxTableTitle'); const cardsDiv = document.getElementById('auxCompareCards');
         
-        let theadHtml = '<tr>';
-        auxColOrder.forEach(id => {
-            if(auxVisCols[id]) {
-                theadHtml += `<th class="px-3 py-2 text-${colDefs[id].a}" draggable="true" ondragstart="window.handleDragStart(event, '${id}')" ondragover="window.handleDragOver(event)" ondrop="window.handleDrop(event, '${id}')" title="Arrastra para mover">${colDefs[id].l}</th>`;
-            }
-        });
-        th.innerHTML = theadHtml + '</tr>';
+        let dayPhoneCounts = {};
+        filteredCalls.forEach(c => { let t = String(c.telefono||'').trim(); if(t && t !== '-') { dayPhoneCounts[t] = (dayPhoneCounts[t]||0) + 1; } });
 
         if(!intvF) {
-            tb.innerHTML = filtered.slice(0,200).map(r => { 
-                let trHtml = '<tr class="border-b border-slate-100 hover:bg-slate-50">';
-                auxColOrder.forEach(id => { 
-                    if(auxVisCols[id]) {
-                        let cClass = typeof colDefs[id].c === 'function' ? colDefs[id].c(r) : colDefs[id].c;
-                        trHtml += `<td class="px-3 py-2 text-${colDefs[id].a} ${cClass}">${colDefs[id].r(r)}</td>`;
-                    }
-                });
+            title.innerHTML = '<i class="fas fa-list-alt"></i> Detalle Bruto de Llamadas'; document.getElementById('auxEvolChartBox').classList.add('hidden'); cardsDiv.innerHTML = '';
+            
+            const colDefsFlat = {
+                'col-fecha': { l:'Fecha', a:'left', c:'font-mono', r:(g)=>g._d }, 'col-hora': { l:'Hora', a:'left', c:'font-mono bg-slate-100/50 font-bold', r:(g)=>g._t },
+                'col-agente': { l:'Agente', a:'left', c:'font-bold text-blue-600', r:(g)=>g._a },
+                'col-total': { l:'Teléfono', a:'center', c:'text-slate-600', r:(g)=>{ let tel = String(g.telefono||'').trim() || '-'; if(tel !== '-' && dayPhoneCounts[tel] > 1) return `<span class="text-red-600 font-bold bg-red-100 px-1 rounded">${tel}</span> <span class="text-[9px] text-slate-400 font-bold" title="Llamadas en el periodo">(🔁 ${dayPhoneCounts[tel]})</span>`; return tel; } },
+                'col-atend': { l:'Estado', a:'center', c:(g=>String(g.estado).toLowerCase().includes('no')?'font-bold text-orange-600':'font-bold text-green-600'), r:(g)=>g.estado||'OK' },
+                'col-noatend': { l:'Sentido', a:'center', c:'uppercase text-[10px] text-slate-500', r:(g)=>g.sentido||'-' },
+                'col-tmo': { l:'Espera', a:'right', c:'font-mono text-purple-600', r:(g)=>g.tiempo_de_espera||'00:00:00' },
+                'col-hablado': { l:'Duración', a:'right', c:'font-mono text-indigo-600 font-bold', r:(g)=>g.tiempo_de_llamada||'00:00:00' },
+                'col-contact': { l:'Tipificación', a:'left', c:'text-[10px] text-slate-500', r:(g)=>g.tipificacion||'-' },
+                'col-pacw': { l:'Observación', a:'left', c:'text-[10px] text-slate-500 truncate max-w-[200px]', r:(g)=>g.observacion||'-' }
+            };
+
+            let theadHtml = '<tr>'; auxColOrder.forEach(id => { if(auxVisCols[id]) theadHtml += `<th class="px-3 py-2 text-${colDefsFlat[id].a}" draggable="true" ondragstart="window.handleDragStart(event, '${id}')" ondragover="window.handleDragOver(event)" ondrop="window.handleDrop(event, '${id}')">${colDefsFlat[id].l}</th>`; }); th.innerHTML = theadHtml + '</tr>';
+            tb.innerHTML = filteredCalls.slice(0,200).map(r => { 
+                let isNoAtRow = String(r.estado).toLowerCase().includes('no') || String(r.estado).toLowerCase().includes('aband');
+                let trHtml = `<tr class="border-b border-slate-100 transition-colors ${isNoAtRow ? 'bg-red-50/50' : 'hover:bg-slate-50'}">`;
+                auxColOrder.forEach(id => { if(auxVisCols[id]) { let cClass = typeof colDefsFlat[id].c === 'function' ? colDefsFlat[id].c(r) : colDefsFlat[id].c; trHtml += `<td class="px-3 py-2 text-${colDefsFlat[id].a} ${cClass}">${colDefsFlat[id].r(r)}</td>`; } });
                 return trHtml + '</tr>';
             }).join('');
-            if(filtered.length > 200) tb.innerHTML += `<tr><td colspan="10" class="text-center py-2 text-xs text-slate-400 bg-slate-50">Mostrando 200 de ${filtered.length} registros</td></tr>`;
-        } else {
-            const iv = parseInt(intvF), grouped = {};
-            filtered.forEach(r => {
-                const tP = r._t.split(':'); if(tP.length>=2) {
-                    const m = parseInt(tP[0])*60+parseInt(tP[1]), bS = Math.floor(m/iv)*iv, bE = bS+iv; const iStr = `${pad(Math.floor(bS/60))}:${pad(bS%60)} - ${pad(Math.floor(bE/60))}:${pad(bE%60)}`; const k = `${r._d}|${iStr}|${r._a}`;
-                    if(!grouped[k]) grouped[k] = { d:r._d, i:iStr, a:r._a, t:0, at:0, no:0, ds:0 };
-                    grouped[k].t++; const st = String(r.estado).toLowerCase().trim(); const tL = timeToSec(r.tiempo_de_llamada);
-                    const isNoAt = st.includes('no-atendida') || st.includes('no atendida') || st.includes('abandonada') || st.includes('falla');
-                    const isAt = !isNoAt && (st.includes('atendida') || st.includes('conectad') || st === 'ok' || st === '' || tL > 0);
-                    if(isNoAt) { grouped[k].no++; } else if(isAt) { grouped[k].at++; grouped[k].ds+=tL; } else { if(tL>0){grouped[k].at++;grouped[k].ds+=tL;}else grouped[k].no++; }
-                }
-            });
-            let agL = Object.values(grouped); agL.sort((a,b)=>a.d.localeCompare(b.d)||a.i.localeCompare(b.i)||a.a.localeCompare(b.a));
-            tb.innerHTML = agL.map(g => {
-                let trHtml = '<tr class="border-b border-slate-100 hover:bg-slate-50">';
-                auxColOrder.forEach(id => { 
-                    if(auxVisCols[id]) {
-                        let cClass = typeof colDefs[id].c === 'function' ? colDefs[id].c(g) : colDefs[id].c;
-                        trHtml += `<td class="px-3 py-2 text-${colDefs[id].a} ${cClass}">${colDefs[id].r(g)}</td>`;
-                    }
-                });
-                return trHtml + '</tr>';
-            }).join('');
+            if(filteredCalls.length > 200) tb.innerHTML += `<tr><td colspan="10" class="text-center py-2 text-xs text-slate-400 bg-slate-50">Mostrando 200 de ${filteredCalls.length} registros</td></tr>`;
+            return;
         }
+
+        title.innerHTML = `<i class="fas fa-clock"></i> Auditoría Agrupada cada ${intvF} Minutos`; document.getElementById('auxEvolChartBox').classList.remove('hidden');
+        
+        const iv = parseInt(intvF); let blocksData = {}; let limits = {}; 
+        const updateLimits = (ag, date, timeStr) => { if(!ag || !date || !timeStr) return; let tP = timeStr.split(':'); if(tP.length < 2) return; let m = parseInt(tP[0])*60 + parseInt(tP[1]); let k = `${ag}|${date}`; if(!limits[k]) limits[k] = { min: Infinity, max: 0 }; if(m < limits[k].min) limits[k].min = m; if(m > limits[k].max) limits[k].max = m; };
+        filteredCalls.forEach(r => { updateLimits(r._a, r._d, r._t); });
+
+        let filteredStates = [];
+        if(RAW_DATA_CACHE.detail) {
+            filteredStates = RAW_DATA_CACHE.detail.filter(det => {
+                let d = normalizeDate(getVal(det, ['fecha', 'dia'])); if(dS && d < dS) return false; if(dE && d > dE) return false;
+                let ag = mapAuxAgent(getVal(det, ['agente'])); let agLow = ag.toLowerCase();
+                if(selectedAuxAgents.length > 0) { let match = false; selectedAuxAgents.forEach(sa => { if(agLow.includes(sa.toLowerCase())) match = true; }); if(!match) return false; }
+                det._normD = d; det._normA = ag; return true;
+            });
+            filteredStates.forEach(det => { updateLimits(det._normA, det._normD, extractTime(String(getVal(det, ['inicio'])||""))); updateLimits(det._normA, det._normD, extractTime(String(getVal(det, ['fin'])||""))); });
+        }
+
+        for(const k in limits) {
+            let parts = k.split('|'); let ag = parts[0], dt = parts[1]; let minBlock = Math.floor(limits[k].min / iv) * iv; let maxBlock = Math.floor(limits[k].max / iv) * iv;
+            for(let b = minBlock; b <= maxBlock; b += iv) { let bE = b + iv; let iStr = `${pad(Math.floor(b/60))}:${pad(b%60)} - ${pad(Math.floor(bE/60))}:${pad(bE%60)}`; blocksData[`${ag}|${dt}|${iStr}`] = { date: dt, agent: ag, blockStr: iStr, bS: b, calls: [], states: [], at:0, no:0, h:0 }; }
+        }
+
+        filteredCalls.forEach(r => {
+            let tP = r._t.split(':'); if(tP.length<2) return; let m = parseInt(tP[0])*60 + parseInt(tP[1]); let bS = Math.floor(m/iv)*iv; let bE = bS + iv; let iStr = `${pad(Math.floor(bS/60))}:${pad(bS%60)} - ${pad(Math.floor(bE/60))}:${pad(bE%60)}`; let k = `${r._a}|${r._d}|${iStr}`;
+            if(blocksData[k]) {
+                blocksData[k].calls.push(r); const st = String(r.estado).toLowerCase().trim(); const tL = timeToSec(r.tiempo_de_llamada); const isNoAt = st.includes('no-atendida') || st.includes('abandonada') || st.includes('falla'); const isAt = !isNoAt && (st.includes('atendida') || st.includes('conectad') || st === 'ok' || st === '' || tL > 0);
+                if(isNoAt) { blocksData[k].no++; } else if(isAt) { blocksData[k].at++; blocksData[k].h+=tL; } else { if(tL>0){blocksData[k].at++;blocksData[k].h+=tL;}else blocksData[k].no++; }
+            }
+        });
+
+        const iconMap = { 'administrativo': '⚙️', 'baño': '🚽', 'bano': '🚽', 'break': '☕', 'colación': '🍽️', 'colacion': '🍽️', 'capacitación': '🎓', 'capacitacion': '🎓' };
+        filteredStates.forEach(det => {
+            let stRaw = String(getVal(det, ['estado'])||"").trim(); let stLow = stRaw.toLowerCase(); let icon = iconMap[stLow];
+            if(icon) {
+                let startVal = String(getVal(det, ['inicio'])||""); let durVal = getVal(det, ['tiempo', 'duracion']); let endVal = String(getVal(det, ['fin'])||""); let sTimeStr = extractTime(startVal); let tP = sTimeStr.split(':'); if(tP.length<2) return;
+                let m = parseInt(tP[0])*60 + parseInt(tP[1]); let bS = Math.floor(m/iv)*iv; let bE = bS + iv; let iStr = `${pad(Math.floor(bS/60))}:${pad(bS%60)} - ${pad(Math.floor(bE/60))}:${pad(bE%60)}`; let k = `${det._normA}|${det._normD}|${iStr}`;
+                if(blocksData[k]) {
+                    let sTimeFull = startVal.includes(' ') ? startVal.split(' ').pop() : startVal; let eTimeFull = endVal.includes(' ') ? endVal.split(' ').pop() : endVal; let inicioSec = timeToSec(sTimeFull); let durSec = timeToSec(durVal);
+                    let endFinalStr = (!endVal || endVal === "undefined") ? secToTime(inicioSec + durSec, false) : secToTime(timeToSec(eTimeFull), false);
+                    let titleText = `${stRaw.charAt(0).toUpperCase() + stRaw.slice(1)} ${secToTime(inicioSec, true)} - ${endFinalStr.substr(0,5)} - TOTAL: ${secToTime(durSec, false)}`;
+                    let htmlIcon = `<span title="${titleText}" class="cursor-help text-[16px] hover:scale-125 transition-transform inline-block">${icon}</span>`; blocksData[k].states.push(htmlIcon);
+                }
+            }
+        });
+
+        let finalBlocks = Object.values(blocksData); finalBlocks.sort((a,b) => a.date.localeCompare(b.date) || a.blockStr.localeCompare(b.blockStr) || a.agent.localeCompare(b.agent));
+
+        if(selectedAuxAgents.length > 0) {
+            cardsDiv.innerHTML = ''; let compareData = {}; selectedAuxAgents.forEach(a => compareData[cleanName(a)] = { at:0, no:0, h:0 });
+            finalBlocks.forEach(b => { let agClean = cleanName(b.agent); if(compareData[agClean]) { compareData[agClean].at += b.at; compareData[agClean].no += b.no; compareData[agClean].h += b.h; } });
+            Object.keys(compareData).forEach((a, idx) => {
+                let d = compareData[a]; let tot = d.at + d.no; let tmo = d.at > 0 ? d.h/d.at : 0; let cont = tot > 0 ? (d.at/tot)*100 : 0;
+                cardsDiv.innerHTML += `<div class="bg-white rounded-lg shadow-sm border border-purple-200 p-3 text-center relative overflow-hidden hover-card"><div class="absolute left-0 top-0 h-full w-1.5 bg-${agColors[idx%agColors.length]}-500"></div><p class="text-xs font-bold text-slate-700 truncate mb-2 text-left pl-2" title="${a}">${a}</p><div class="grid grid-cols-2 gap-1 text-[10px]"><div class="bg-slate-50 rounded border p-1"><p class="text-slate-400">Atend</p><p class="font-bold text-green-600">${d.at}</p></div><div class="bg-slate-50 rounded border p-1"><p class="text-slate-400">No Atend</p><p class="font-bold text-orange-600">${d.no}</p></div><div class="bg-slate-50 rounded border p-1"><p class="text-slate-400">Contact</p><p class="font-bold text-sky-600">${cont.toFixed(1)}%</p></div><div class="bg-slate-50 rounded border p-1"><p class="text-slate-400">TMO</p><p class="font-bold text-indigo-600">${secToTime(tmo, true)}</p></div><div class="col-span-2 bg-slate-50 rounded border p-1"><p class="text-slate-400">Suma Hablado</p><p class="font-bold text-purple-700">${secToTime(d.h)}</p></div></div></div>`;
+            });
+            cardsDiv.classList.remove('hidden');
+        } else cardsDiv.classList.add('hidden');
+
+        const colDefsGrp = {
+            'col-fecha': { l:'Fecha', a:'left', c:'font-mono text-slate-400', r:(g)=>g.date },
+            'col-hora': { l:'Rango Horario', a:'left', c:'font-mono bg-purple-50/50 font-bold text-purple-800', r:(g)=>`<div class="flex items-center gap-2"><button onclick="window.toggleAccordion('sub-${g.agent.replace(/[^a-zA-Z0-9]/g,'')}-${g.bS}', this)" class="accordion-btn">[+]</button>${g.blockStr}</div>` },
+            'col-agente': { l:'Agente', a:'left', c:'font-bold text-slate-700', r:(g)=>{ const icons = g.states.length > 0 ? g.states.join('') : ''; return `${g.agent} ${icons ? `<span class="ml-2 inline-flex items-center gap-1 bg-white border border-purple-200 px-1.5 py-0.5 rounded-full shadow-sm">${icons}</span>` : ''}`; } },
+            'col-total': { l:'Interacciones', a:'center', c:'text-slate-600 font-bold', r:(g)=>g.at+g.no },
+            'col-atend': { l:'Atendidas', a:'center', c:'font-bold text-green-600 bg-green-50/30', r:(g)=>g.at },
+            'col-noatend': { l:'No Atend.', a:'center', c:'font-bold text-orange-600 bg-orange-50/30', r:(g)=>g.no },
+            'col-tmo': { l:'TMO Promedio', a:'right', c:'font-mono text-purple-600', r:(g)=>secToTime(g.at?g.h/g.at:0,true) },
+            'col-hablado': { l:'Suma Hablado', a:'right', c:'font-mono text-indigo-600 font-bold', r:(g)=>secToTime(g.h) },
+            'col-contact': { l:'Contactabilidad', a:'right', c:'font-bold text-sky-600 bg-sky-50/30', r:(g)=>((Number((g.at+g.no)?(g.at/(g.at+g.no))*100:0)).toFixed(1)+'%') }
+        };
+
+        let theadHtml = '<tr>'; auxColOrder.forEach(id => { if(colDefsGrp[id] && auxVisCols[id]) theadHtml += `<th class="px-3 py-2 text-${colDefsGrp[id].a}">${colDefsGrp[id].l}</th>`; }); th.innerHTML = theadHtml + '</tr>';
+
+        let lastBlockStr = '';
+        tb.innerHTML = finalBlocks.map((b) => {
+            let isNewBlock = (`${b.date}-${b.blockStr}` !== lastBlockStr); lastBlockStr = `${b.date}-${b.blockStr}`;
+            let blockDividerClass = isNewBlock ? 'border-t-2 border-slate-800 ' : 'border-t border-slate-100 ';
+            let cIdx = selectedAuxAgents.findIndex(a => cleanName(a) === cleanName(b.agent));
+            let trCls = cIdx >= 0 ? `border-l-4 border-${agColors[cIdx%agColors.length]}-500 bg-${agColors[cIdx%agColors.length]}-50/30` : 'hover:bg-slate-50 transition-colors';
+            
+            let trHtml = `<tr class="${blockDividerClass} ${trCls}">`;
+            auxColOrder.forEach(id => { if(colDefsGrp[id] && auxVisCols[id]) { let cClass = typeof colDefsGrp[id].c === 'function' ? colDefsGrp[id].c(b) : colDefsGrp[id].c; trHtml += `<td class="px-3 py-2 text-${colDefsGrp[id].a} ${cClass}">${colDefsGrp[id].r(b)}</td>`; } });
+            trHtml += '</tr>';
+
+            let blockPhoneCounts = {}; b.calls.forEach(c => { let t = String(c.telefono||'').trim(); if(t && t!=='-') { blockPhoneCounts[t] = (blockPhoneCounts[t]||0) + 1; } });
+            let safeId = `sub-${b.agent.replace(/[^a-zA-Z0-9]/g,'')}-${b.bS}`;
+            let subTr = `<tr id="${safeId}" class="hidden bg-slate-50 border-b border-slate-200"><td colspan="10" class="p-2">`;
+            if(b.calls.length === 0) { subTr += `<div class="text-center text-xs text-slate-400 p-2 font-mono italic">Sin llamadas en este bloque.</div>`; } 
+            else {
+                subTr += `<div class="ml-10 max-w-5xl bg-white border border-slate-200 rounded shadow-sm overflow-hidden"><table class="w-full text-xs text-left"><thead class="bg-slate-100 text-slate-500 uppercase text-[9px] font-bold border-b border-slate-200"><tr><th class="px-3 py-1.5">Hora</th><th class="px-3 py-1.5">Teléfono</th><th class="px-3 py-1.5">Tipificación</th><th class="px-3 py-1.5">Duración</th><th class="px-3 py-1.5">Estado / Sentido</th></tr></thead><tbody class="divide-y divide-slate-100">
+                    ${b.calls.map(c => {
+                        let tel = String(c.telefono||'').trim() || '-'; let telUI = tel;
+                        if(tel !== '-') {
+                            if(blockPhoneCounts[tel] > 1) telUI = `<span class="text-red-600 font-bold bg-red-100 px-1 rounded shadow-sm border border-red-200">${tel}</span>`;
+                            if(dayPhoneCounts[tel] > 1) telUI += ` <span class="text-[9px] text-slate-400 font-bold ml-1" title="Llamadas en el periodo filtrado">(🔁 ${dayPhoneCounts[tel]})</span>`;
+                        }
+                        let isNoAt = String(c.estado).toLowerCase().includes('no') || String(c.estado).toLowerCase().includes('aband');
+                        let rowCls = isNoAt ? 'bg-red-50/60' : 'hover:bg-slate-50 transition-colors';
+                        return `<tr class="${rowCls}"><td class="px-3 py-1.5 font-mono text-slate-600">${c._t}</td><td class="px-3 py-1.5 font-mono">${telUI}</td><td class="px-3 py-1.5 truncate max-w-[200px]" title="${c.tipificacion||'-'}">${c.tipificacion || '-'}</td><td class="px-3 py-1.5 font-mono text-indigo-600">${c.tiempo_de_llamada || '00:00:00'}</td><td class="px-3 py-1.5"><span class="${isNoAt?'text-orange-600':'text-green-600'} font-bold">${c.estado||'-'}</span> <span class="text-slate-400 text-[10px]">(${c.sentido||'-'})</span></td></tr>`
+                    }).join('')}
+                </tbody></table></div>`;
+            }
+            subTr += `</td></tr>`; return trHtml + subTr;
+        }).join('');
         window.updateAuxCompareChart();
     }
 
-    window.exportAuxTableOnly = function() { const tb = document.getElementById('auxDataTbl'); const ws = XLSX.utils.table_to_sheet(tb); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Auxiliar"); XLSX.writeFile(wb, "Reporte_Auxiliar.xlsx"); }
-
     window.updateAuxCompareChart = function() {
-        const a1 = document.getElementById('cmpA1')?.value, a2 = document.getElementById('cmpA2')?.value, a3 = document.getElementById('cmpA3')?.value, m = document.getElementById('cmpMetric')?.value;
-        const canvas = document.getElementById('auxCompareChart'); if(!canvas) return;
-        if(!RAW_DATA_CACHE.aux || RAW_DATA_CACHE.aux.length === 0) return;
+        const m = document.getElementById('cmpMetric')?.value; const canvas = document.getElementById('auxCompareChart'); if(!canvas) return;
+        if(!RAW_DATA_CACHE.aux || RAW_DATA_CACHE.aux.length === 0 || selectedAuxAgents.length === 0) { if(charts['auxComp']) charts['auxComp'].destroy(); return; }
         
-        const dF = document.getElementById('auxDate')?.value;
-        const iv = parseInt(document.getElementById('auxInterval')?.value || '60');
-        
+        const dS = document.getElementById('auxDateStart')?.value; const dE = document.getElementById('auxDateEnd')?.value; const iv = parseInt(document.getElementById('auxInterval')?.value || '60');
         let baseF = RAW_DATA_CACHE.aux;
-        if(dF) baseF = baseF.filter(r => r._d === dF);
+        if(dS) baseF = baseF.filter(r => r._d >= dS); if(dE) baseF = baseF.filter(r => r._d <= dE);
         
         let intervalsSet = new Set();
-        baseF.forEach(r => {
-            const tP = r._t.split(':');
-            if(tP.length>=2) {
-                const mins = parseInt(tP[0])*60+parseInt(tP[1]), bS = Math.floor(mins/iv)*iv;
-                intervalsSet.add(`${pad(Math.floor(bS/60))}:${pad(bS%60)}`); 
-            }
-        });
+        baseF.forEach(r => { const tP = r._t.split(':'); if(tP.length>=2) { const mins = parseInt(tP[0])*60+parseInt(tP[1]), bS = Math.floor(mins/iv)*iv; intervalsSet.add(`${pad(Math.floor(bS/60))}:${pad(bS%60)}`); } });
         let labels = [...intervalsSet].sort(); if(labels.length === 0) labels = ["00:00"];
 
         const getAgentData = (agentName) => {
             if(!agentName) return labels.map(()=>0);
             return labels.map(lbl => {
-                let f = baseF.filter(r => {
-                    if(r._a !== agentName) return false;
-                    const tP = r._t.split(':'); if(tP.length>=2) { const mins = parseInt(tP[0])*60+parseInt(tP[1]), bS = Math.floor(mins/iv)*iv; return `${pad(Math.floor(bS/60))}:${pad(bS%60)}` === lbl; } return false;
-                });
+                let f = baseF.filter(r => { if(!r._a_low.includes(agentName.toLowerCase())) return false; const tP = r._t.split(':'); if(tP.length>=2) { const mins = parseInt(tP[0])*60+parseInt(tP[1]), bS = Math.floor(mins/iv)*iv; return `${pad(Math.floor(bS/60))}:${pad(bS%60)}` === lbl; } return false; });
                 let at=0, noat=0, h=0; 
                 f.forEach(r => { 
-                    const st=String(r.estado).toLowerCase().trim(), tL=timeToSec(r.tiempo_de_llamada); 
-                    const isNoAt = st.includes('no-atendida')||st.includes('abandonada')||st.includes('falla')||st==='no atendida';
-                    const isAt = !isNoAt && (st.includes('atendida')||st.includes('conectad')||st==='ok'||st===''||tL>0);
+                    const st=String(r.estado).toLowerCase().trim(), tL=timeToSec(r.tiempo_de_llamada); const isNoAt = st.includes('no-atendida')||st.includes('abandonada')||st.includes('falla')||st==='no atendida'; const isAt = !isNoAt && (st.includes('atendida')||st.includes('conectad')||st==='ok'||st===''||tL>0);
                     if(isNoAt) { noat++; } else if(isAt) { at++; h+=tL; } else { if(tL>0){at++;h+=tL;}else noat++; } 
                 });
-                
                 if(m === 'hablado') return h; if(m === 'atendidas') return at; if(m === 'no_atendidas') return noat; 
-                if(m === 'contactabilidad') return (at+noat)>0 ? (at/(at+noat))*100 : 0; if(m === 'tmo') return at ? h/at : 0; 
-                return 0;
+                if(m === 'contactabilidad') return (at+noat)>0 ? (at/(at+noat))*100 : 0; if(m === 'tmo') return at ? h/at : 0; return 0;
             });
         };
 
-        const ds1 = getAgentData(a1), ds2 = getAgentData(a2), ds3 = getAgentData(a3);
+        const colors = ['#3b82f6', '#10b981', '#f97316', '#f43f5e', '#a855f7', '#14b8a6'];
+        let datasets = selectedAuxAgents.map((a, i) => { return { label: a, data: getAgentData(a), borderColor: colors[i%colors.length], backgroundColor: colors[i%colors.length], tension: 0.3, fill: false } });
+
         if(charts['auxComp']) charts['auxComp'].destroy();
-        charts['auxComp'] = new Chart(canvas, {
-            type: 'line',
-            data: { labels: labels, datasets: [ { label: a1||'Agente 1', data: ds1, borderColor: '#8b5cf6', backgroundColor: '#8b5cf6', tension: 0.3, fill: false }, { label: a2||'Agente 2', data: ds2, borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3, fill: false }, { label: a3||'Agente 3', data: ds3, borderColor: '#0ea5e9', backgroundColor: '#0ea5e9', tension: 0.3, fill: false } ] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
-        });
+        charts['auxComp'] = new Chart(canvas, { type: 'line', data: { labels: labels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } } });
     }
 
-    // Modal Triggers
-    window.startRecordingCountdown = function() {
-        let count = 3; const overlay = document.getElementById('countdownOverlay'); overlay.innerText = count; overlay.classList.remove('hidden'); document.getElementById('btnRecord').disabled = true;
-        recordInterval = setInterval(() => { count--; if(count > 0) { overlay.innerText = count; } else { clearInterval(recordInterval); overlay.classList.add('hidden'); window.startRecording(); } }, 1000);
-    }
+    // --- GRABACIÓN AUDIO (Untouched) ---
+    window.startRecordingCountdown = function() { let count = 3; const overlay = document.getElementById('countdownOverlay'); overlay.innerText = count; overlay.classList.remove('hidden'); document.getElementById('btnRecord').disabled = true; recordInterval = setInterval(() => { count--; if(count > 0) { overlay.innerText = count; } else { clearInterval(recordInterval); overlay.classList.add('hidden'); window.startRecording(); } }, 1000); }
+    window.startRecording = async function() { audioChunks = []; recordSeconds = 0; const deviceId = document.getElementById('micSelector').value; try { const stream = await navigator.mediaDevices.getUserMedia({ audio: deviceId ? { exact: deviceId } : true }); mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' }); mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); }; mediaRecorder.onstop = window.processAudioData; mediaRecorder.start(); document.getElementById('btnRecord').classList.add('hidden'); document.getElementById('btnStopRecord').classList.remove('hidden'); document.getElementById('recordTimer').classList.add('text-red-600', 'animate-pulse'); recordInterval = setInterval(() => { recordSeconds++; const m = Math.floor(recordSeconds / 60).toString().padStart(2, '0'); const s = (recordSeconds % 60).toString().padStart(2, '0'); document.getElementById('recordTimer').innerText = `${m}:${s}`; }, 1000); } catch(e) { Swal.fire("Error", "No se pudo iniciar el micrófono.", "error"); document.getElementById('btnRecord').disabled = false; } }
+    window.stopRecording = function() { if(typeof mediaRecorder !== 'undefined' && mediaRecorder && mediaRecorder.state !== 'inactive') { mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t => t.stop()); } clearInterval(recordInterval); document.getElementById('btnStopRecord').classList.add('hidden'); document.getElementById('btnRecord').classList.remove('hidden'); document.getElementById('btnRecord').disabled = false; document.getElementById('recordTimer').classList.remove('text-red-600', 'animate-pulse'); }
+    window.processAudioData = function() { const blob = new Blob(audioChunks, { type: 'audio/webm' }); const audioUrl = URL.createObjectURL(blob); const audioPlayback = document.getElementById('audioPlayback'); audioPlayback.src = audioUrl; audioPlayback.classList.remove('hidden'); const btnDownload = document.getElementById('btnDownloadAudio'); btnDownload.href = audioUrl; const now = new Date(); const dStr = now.getFullYear().toString() + pad(now.getMonth()+1) + pad(now.getDate()); const tStr = pad(now.getHours()) + pad(now.getMinutes()); const exec = (document.getElementById('fbEjecutivo').value || 'Ejecutivo').trim().replace(/\s+/g, '_'); const sup = (document.getElementById('fbEvaluador').value || 'Supervisor').trim().replace(/\s+/g, '_'); btnDownload.download = `${dStr}_${tStr}_${exec}_${sup}.webm`; btnDownload.classList.remove('hidden'); btnDownload.classList.add('flex'); setTimeout(() => { btnDownload.click(); }, 300); }
 
-    window.startRecording = async function() {
-        audioChunks = []; recordSeconds = 0;
-        const deviceId = document.getElementById('micSelector').value;
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: deviceId ? { exact: deviceId } : true }); 
-            mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); }; 
-            mediaRecorder.onstop = window.processAudioData; 
-            mediaRecorder.start();
-            
-            document.getElementById('btnRecord').classList.add('hidden'); 
-            document.getElementById('btnStopRecord').classList.remove('hidden'); 
-            document.getElementById('recordTimer').classList.add('text-red-600', 'animate-pulse');
-            
-            recordInterval = setInterval(() => { 
-                recordSeconds++; 
-                const m = Math.floor(recordSeconds / 60).toString().padStart(2, '0');
-                const s = (recordSeconds % 60).toString().padStart(2, '0'); 
-                document.getElementById('recordTimer').innerText = `${m}:${s}`; 
-            }, 1000);
-        } catch(e) { Swal.fire("Error", "No se pudo iniciar el micrófono.", "error"); document.getElementById('btnRecord').disabled = false; }
-    }
-
-    window.stopRecording = function() {
-        if(typeof mediaRecorder !== 'undefined' && mediaRecorder && mediaRecorder.state !== 'inactive') { 
-            mediaRecorder.stop(); 
-            mediaRecorder.stream.getTracks().forEach(t => t.stop()); 
-        }
-        clearInterval(recordInterval); 
-        document.getElementById('btnStopRecord').classList.add('hidden'); 
-        document.getElementById('btnRecord').classList.remove('hidden'); 
-        document.getElementById('btnRecord').disabled = false; 
-        document.getElementById('recordTimer').classList.remove('text-red-600', 'animate-pulse');
-    }
-
-    window.processAudioData = function() {
-        const blob = new Blob(audioChunks, { type: 'audio/webm' }); const audioUrl = URL.createObjectURL(blob);
-        const audioPlayback = document.getElementById('audioPlayback'); audioPlayback.src = audioUrl; audioPlayback.classList.remove('hidden');
-        const btnDownload = document.getElementById('btnDownloadAudio'); btnDownload.href = audioUrl;
-        const now = new Date(); const dStr = now.getFullYear().toString() + pad(now.getMonth()+1) + pad(now.getDate()); const tStr = pad(now.getHours()) + pad(now.getMinutes());
-        const exec = (document.getElementById('fbEjecutivo').value || 'Ejecutivo').trim().replace(/\s+/g, '_'); const sup = (document.getElementById('fbEvaluador').value || 'Supervisor').trim().replace(/\s+/g, '_');
-        btnDownload.download = `${dStr}_${tStr}_${exec}_${sup}.webm`; 
-        btnDownload.classList.remove('hidden'); btnDownload.classList.add('flex');
-        
-        setTimeout(() => { btnDownload.click(); }, 300);
-    }
-
+    // --- MODAL FEEDBACK (Untouched) ---
     window.openFeedbackModal = function(agente, fecha) {
         currentFeedbackRow = FEEDBACK_DATA.find(f => cleanName(f.ejecutivo) === cleanName(agente) && normalizeDate(f.fecha_desviacion) === normalizeDate(fecha));
         document.getElementById('fbEjecutivo').value = agente; document.getElementById('fbFechaDesv').value = fecha;
         const banner = document.getElementById('fbStatusBanner'), btnSave = document.getElementById('btnSaveFeedback'), btnPdf = document.getElementById('btnPdf');
         document.getElementById('formFeedback').reset(); document.getElementById('fbEjecutivo').value = agente; document.getElementById('fbFechaDesv').value = fecha;
-        
-        navigator.mediaDevices.enumerateDevices().then(devices => {
-            const sel = document.getElementById('micSelector'); sel.innerHTML = '<option value="">Micro...</option>';
-            devices.filter(d => d.kind === 'audioinput').forEach((d, i) => sel.innerHTML += `<option value="${d.deviceId}">${d.label || 'Mic '+(i+1)}</option>`);
-        }).catch(()=>{});
-
+        navigator.mediaDevices.enumerateDevices().then(devices => { const sel = document.getElementById('micSelector'); sel.innerHTML = '<option value="">Micro...</option>'; devices.filter(d => d.kind === 'audioinput').forEach((d, i) => sel.innerHTML += `<option value="${d.deviceId}">${d.label || 'Mic '+(i+1)}</option>`); }).catch(()=>{});
         if (currentFeedbackRow) {
             banner.classList.remove('hidden', 'bg-blue-100', 'text-blue-800'); banner.classList.add('bg-green-100', 'text-green-800'); banner.innerHTML = '<i class="fas fa-check-circle"></i> Feedback Realizado';
-            document.getElementById('fbEvaluador').value = currentFeedbackRow.evaluador || ''; 
-            document.getElementById('fbFechaFeed').value = normalizeDate(currentFeedbackRow.fecha_feedback || ''); 
-            document.getElementById('fbHoraFeed').value = currentFeedbackRow.hora_feedback || ''; 
-            document.getElementById('fbAudio').value = currentFeedbackRow.grabacion_audio || ''; 
-            document.getElementById('fbIndicador').value = currentFeedbackRow.indicador || ''; 
-            document.getElementById('fbDetalle').value = currentFeedbackRow.detalle_quiebre || ''; 
-            document.getElementById('fbObservacion').value = currentFeedbackRow.obv_ejecutivo || ''; 
-            document.getElementById('fbCompromiso').value = currentFeedbackRow.compromiso || '';
+            document.getElementById('fbEvaluador').value = currentFeedbackRow.evaluador || ''; document.getElementById('fbFechaFeed').value = normalizeDate(currentFeedbackRow.fecha_feedback || ''); document.getElementById('fbHoraFeed').value = currentFeedbackRow.hora_feedback || ''; document.getElementById('fbAudio').value = currentFeedbackRow.grabacion_audio || ''; document.getElementById('fbIndicador').value = currentFeedbackRow.indicador || ''; document.getElementById('fbDetalle').value = currentFeedbackRow.detalle_quiebre || ''; document.getElementById('fbObservacion').value = currentFeedbackRow.obv_ejecutivo || ''; document.getElementById('fbCompromiso').value = currentFeedbackRow.compromiso || '';
             const inputs = document.querySelectorAll('#formFeedback input:not([readonly]), #formFeedback select, #formFeedback textarea'); inputs.forEach(i => i.disabled = true);
             btnSave.classList.add('hidden'); btnPdf.classList.remove('hidden'); document.getElementById('audioRecorderModule')?.classList.add('hidden');
         } else {
@@ -1498,111 +1489,28 @@
     }
     
     window.closeFeedback = function() { 
-        try {
-            if(typeof mediaRecorder !== 'undefined' && mediaRecorder && mediaRecorder.state !== 'inactive') {
-                window.stopRecording();
-            }
-        } catch(e) {}
-        document.getElementById('recordTimer').innerText = '00:00'; 
-        document.getElementById('audioPlayback').classList.add('hidden');
-        document.getElementById('btnDownloadAudio').classList.add('hidden'); 
-        document.getElementById('btnDownloadAudio').classList.remove('flex');
-        document.getElementById('btnRecord').classList.remove('hidden'); 
-        document.getElementById('btnStopRecord').classList.add('hidden'); 
-        document.getElementById('btnRecord').disabled = false;
-        document.getElementById('feedbackPanel').classList.add('hidden'); 
+        try { if(typeof mediaRecorder !== 'undefined' && mediaRecorder && mediaRecorder.state !== 'inactive') { window.stopRecording(); } } catch(e) {}
+        document.getElementById('recordTimer').innerText = '00:00'; document.getElementById('audioPlayback').classList.add('hidden'); document.getElementById('btnDownloadAudio').classList.add('hidden'); document.getElementById('btnDownloadAudio').classList.remove('flex'); document.getElementById('btnRecord').classList.remove('hidden'); document.getElementById('btnStopRecord').classList.add('hidden'); document.getElementById('btnRecord').disabled = false; document.getElementById('feedbackPanel').classList.add('hidden'); 
     }
     
     window.generatePDF = function() {
-        if(!currentFeedbackRow) return; 
-        const doc = new jsPDF(); 
-        
-        doc.setFillColor(79, 70, 229); 
-        doc.rect(0, 0, 210, 30, 'F'); 
-        doc.setTextColor(255, 255, 255); 
-        doc.setFontSize(16); 
-        doc.setFont("helvetica", "bold"); 
-        doc.text("REPORTE DE GESTIÓN Y DESEMPEÑO", 105, 18, null, null, "center"); 
-        
-        doc.setFillColor(248, 250, 252); 
-        doc.setDrawColor(226, 232, 240); 
-        doc.roundedRect(15, 40, 180, 40, 3, 3, 'FD');
-        
-        doc.setTextColor(15, 23, 42); 
-        doc.setFontSize(10);
-        
-        doc.setFont("helvetica", "bold"); doc.text("Ejecutivo:", 20, 50); 
-        doc.setFont("helvetica", "normal"); doc.text(String(currentFeedbackRow.ejecutivo || '-'), 45, 50);
-        
-        doc.setFont("helvetica", "bold"); doc.text("Evaluador:", 20, 60); 
-        doc.setFont("helvetica", "normal"); doc.text(String(currentFeedbackRow.evaluador || '-'), 45, 60);
-        
-        doc.setFont("helvetica", "bold"); doc.text("Indicador:", 20, 70); 
-        doc.setFont("helvetica", "normal"); doc.text(String(currentFeedbackRow.indicador || '-'), 45, 70);
-        
-        doc.setFont("helvetica", "bold"); doc.text("Fecha Desv:", 120, 50); 
-        doc.setFont("helvetica", "normal"); doc.text(normalizeDate(currentFeedbackRow.fecha_desviacion || '-'), 145, 50);
-        
-        doc.setFont("helvetica", "bold"); doc.text("Fecha Feed:", 120, 60); 
-        doc.setFont("helvetica", "normal"); doc.text(normalizeDate(currentFeedbackRow.fecha_feedback) + " " + (currentFeedbackRow.hora_feedback || ""), 145, 60);
-        
-        doc.setFont("helvetica", "bold"); doc.text("Audio Grabado:", 120, 70); 
-        doc.setFont("helvetica", "normal"); doc.text(String(currentFeedbackRow.grabacion_audio || "NO"), 148, 70);
-        
-        let y = 95;
-        doc.setTextColor(79, 70, 229); 
-        doc.setFont("helvetica", "bold"); 
-        doc.setFontSize(12);
-        doc.text("Detalle del Quiebre", 15, y); 
-        doc.setDrawColor(79, 70, 229); doc.line(15, y+2, 55, y+2);
-        
-        y += 10; 
-        doc.setTextColor(51, 65, 85); 
-        doc.setFont("helvetica", "normal"); 
-        doc.setFontSize(10);
-        const splitDetalle = doc.splitTextToSize(currentFeedbackRow.detalle_quiebre || "Sin detalle registrado.", 180); 
-        doc.text(splitDetalle, 15, y); 
-        y += (splitDetalle.length * 5) + 10;
-        
-        if(currentFeedbackRow.obv_ejecutivo) {
-            doc.setTextColor(79, 70, 229); 
-            doc.setFont("helvetica", "bold"); doc.setFontSize(12);
-            doc.text("Observación del Ejecutivo", 15, y); 
-            doc.line(15, y+2, 70, y+2);
-            y += 10;
-            doc.setTextColor(51, 65, 85); doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-            const splitObs = doc.splitTextToSize(currentFeedbackRow.obv_ejecutivo, 180); 
-            doc.text(splitObs, 15, y); 
-            y += (splitObs.length * 5) + 10;
-        }
-        
-        doc.setTextColor(79, 70, 229); 
-        doc.setFont("helvetica", "bold"); doc.setFontSize(12);
-        doc.text("Compromiso / Acuerdo", 15, y); 
-        doc.line(15, y+2, 63, y+2);
-        
-        y += 10; 
-        doc.setTextColor(51, 65, 85); 
-        doc.setFont("helvetica", "normal"); 
-        doc.setFontSize(10);
-        const splitComp = doc.splitTextToSize(currentFeedbackRow.compromiso || "Sin compromiso registrado.", 180); 
-        doc.text(splitComp, 15, y);
-        
-        y = 250; 
-        doc.setDrawColor(203, 213, 225); 
-        doc.setLineWidth(0.5); 
-        doc.line(30, y, 90, y); 
-        doc.line(120, y, 180, y); 
-        
-        doc.setTextColor(15, 23, 42);
-        doc.setFontSize(9); doc.setFont("helvetica", "bold");
-        doc.text(String(currentFeedbackRow.evaluador || "Evaluador"), 60, y+5, null, null, "center"); 
-        doc.text(String(currentFeedbackRow.ejecutivo || "Ejecutivo"), 150, y+5, null, null, "center"); 
-        
-        doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(100, 116, 139);
-        doc.text("Firma Evaluador", 60, y+10, null, null, "center"); 
-        doc.text("Firma Ejecutivo", 150, y+10, null, null, "center"); 
-        
+        if(!currentFeedbackRow) return; const doc = new jsPDF(); 
+        doc.setFillColor(79, 70, 229); doc.rect(0, 0, 210, 30, 'F'); doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.text("REPORTE DE GESTIÓN Y DESEMPEÑO", 105, 18, null, null, "center"); 
+        doc.setFillColor(248, 250, 252); doc.setDrawColor(226, 232, 240); doc.roundedRect(15, 40, 180, 40, 3, 3, 'FD'); doc.setTextColor(15, 23, 42); doc.setFontSize(10);
+        doc.setFont("helvetica", "bold"); doc.text("Ejecutivo:", 20, 50); doc.setFont("helvetica", "normal"); doc.text(String(currentFeedbackRow.ejecutivo || '-'), 45, 50);
+        doc.setFont("helvetica", "bold"); doc.text("Evaluador:", 20, 60); doc.setFont("helvetica", "normal"); doc.text(String(currentFeedbackRow.evaluador || '-'), 45, 60);
+        doc.setFont("helvetica", "bold"); doc.text("Indicador:", 20, 70); doc.setFont("helvetica", "normal"); doc.text(String(currentFeedbackRow.indicador || '-'), 45, 70);
+        doc.setFont("helvetica", "bold"); doc.text("Fecha Desv:", 120, 50); doc.setFont("helvetica", "normal"); doc.text(normalizeDate(currentFeedbackRow.fecha_desviacion || '-'), 145, 50);
+        doc.setFont("helvetica", "bold"); doc.text("Fecha Feed:", 120, 60); doc.setFont("helvetica", "normal"); doc.text(normalizeDate(currentFeedbackRow.fecha_feedback) + " " + (currentFeedbackRow.hora_feedback || ""), 145, 60);
+        doc.setFont("helvetica", "bold"); doc.text("Audio Grabado:", 120, 70); doc.setFont("helvetica", "normal"); doc.text(String(currentFeedbackRow.grabacion_audio || "NO"), 148, 70);
+        let y = 95; doc.setTextColor(79, 70, 229); doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.text("Detalle del Quiebre", 15, y); doc.setDrawColor(79, 70, 229); doc.line(15, y+2, 55, y+2);
+        y += 10; doc.setTextColor(51, 65, 85); doc.setFont("helvetica", "normal"); doc.setFontSize(10); const splitDetalle = doc.splitTextToSize(currentFeedbackRow.detalle_quiebre || "Sin detalle registrado.", 180); doc.text(splitDetalle, 15, y); y += (splitDetalle.length * 5) + 10;
+        if(currentFeedbackRow.obv_ejecutivo) { doc.setTextColor(79, 70, 229); doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.text("Observación del Ejecutivo", 15, y); doc.line(15, y+2, 70, y+2); y += 10; doc.setTextColor(51, 65, 85); doc.setFont("helvetica", "normal"); doc.setFontSize(10); const splitObs = doc.splitTextToSize(currentFeedbackRow.obv_ejecutivo, 180); doc.text(splitObs, 15, y); y += (splitObs.length * 5) + 10; }
+        doc.setTextColor(79, 70, 229); doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.text("Compromiso / Acuerdo", 15, y); doc.line(15, y+2, 63, y+2);
+        y += 10; doc.setTextColor(51, 65, 85); doc.setFont("helvetica", "normal"); doc.setFontSize(10); const splitComp = doc.splitTextToSize(currentFeedbackRow.compromiso || "Sin compromiso registrado.", 180); doc.text(splitComp, 15, y);
+        y = 250; doc.setDrawColor(203, 213, 225); doc.setLineWidth(0.5); doc.line(30, y, 90, y); doc.line(120, y, 180, y); 
+        doc.setTextColor(15, 23, 42); doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.text(String(currentFeedbackRow.evaluador || "Evaluador"), 60, y+5, null, null, "center"); doc.text(String(currentFeedbackRow.ejecutivo || "Ejecutivo"), 150, y+5, null, null, "center"); 
+        doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(100, 116, 139); doc.text("Firma Evaluador", 60, y+10, null, null, "center"); doc.text("Firma Ejecutivo", 150, y+10, null, null, "center"); 
         doc.save(`Feedback_${cleanName(currentFeedbackRow.ejecutivo || 'Agent')}.pdf`);
     }
 
@@ -1629,227 +1537,65 @@
     window.showConfig = function() { document.getElementById('configPanel').classList.remove('hidden'); }
     window.saveConfig = function() { const u=document.getElementById('apiUrlInput').value.trim(); if(!u) return; localStorage.setItem('cc_dashboard_api_url',u); window.closeConfig(); window.connectToSheet(u); }
 
-    // --- SORT LOGIC ---
-    window.sortQuality = function(col) { if(qSortCol === col) qSortAsc *= -1; else { qSortCol = col; qSortAsc = 1; } window.renderQualityDashboard(); }
-    window.sortQualitySummary = function(col) { if(qSummarySortCol === col) qSummarySortAsc *= -1; else { qSummarySortCol = col; qSummarySortAsc = -1; } window.renderQualityDashboard(); }
-    window.sortDurationSummary = function(col) { if(qDurSortCol === col) qDurSortAsc *= -1; else { qDurSortCol = col; qDurSortAsc = -1; } window.renderQualityDashboard(); }
-    window.sortTraffic = function(col) { if(tSortCol === col) tSortAsc *= -1; else { tSortCol = col; tSortAsc = -1; } window.renderTrafficDashboard(); }
-    
-    // --- TOGGLE AGENT IN QUALITY DASH ---
-    window.toggleQualityAgent = function(name) {
-        const input = document.getElementById('qAgentSearch');
-        if(input.value.toLowerCase() === name.toLowerCase()) { input.value = ''; } else { input.value = name; }
-        window.renderQualityDashboard();
-    }
-
-    // --- EXCEL EXPORTS ---
-    window.exportQualitySummary = function() {
-        if(window.currentQualitySummaryData.length === 0) return Swal.fire("Atención", "No hay datos.", "warning");
-        const ws = XLSX.utils.json_to_sheet(window.currentQualitySummaryData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Calidad"); XLSX.writeFile(wb, "Resumen_Calidad_Ejecutivos.xlsx");
-    }
-    window.exportDurationSummary = function() {
-        if(window.currentDurationSummaryData.length === 0) return Swal.fire("Atención", "No hay datos.", "warning");
-        const ws = XLSX.utils.json_to_sheet(window.currentDurationSummaryData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Tiempos"); XLSX.writeFile(wb, "Resumen_Tiempos_Ejecutivos.xlsx");
-    }
-    window.exportQualityDetails = function() {
-        if(window.currentQualityData.length === 0) return Swal.fire("Atención", "No hay datos.", "warning");
-        const exportData = window.currentQualityData.map(r => ({ "Fecha": r._d, "Hora": r._t, "Ejecutivo": r._a, "Sentido": r.sentido || '-', "Estado": r.estado || '-', "Duración": r.tiempo_de_llamada || '00:00:00', "Tipificación": r.tipificacion || '-', "Observación": r.observacion || '-', "Calidad": r._qStatus.toUpperCase() }));
-        const ws = XLSX.utils.json_to_sheet(exportData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Auditoria"); XLSX.writeFile(wb, "Auditoria_Glosas_Detalle.xlsx");
-    }
-    window.exportTrafficInbound = function() {
-        if(window.currentTrafficInbound.length === 0) return Swal.fire("Atención", "No hay datos.", "warning");
-        const ws = XLSX.utils.json_to_sheet(window.currentTrafficInbound); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Entrantes"); XLSX.writeFile(wb, "Resumen_Trafico_Entrante.xlsx");
-    }
-    window.exportTrafficOutbound = function() {
-        if(window.currentTrafficOutbound.length === 0) return Swal.fire("Atención", "No hay datos.", "warning");
-        const ws = XLSX.utils.json_to_sheet(window.currentTrafficOutbound); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Salientes"); XLSX.writeFile(wb, "Resumen_Trafico_Saliente.xlsx");
-    }
-    window.exportTrafficDaily = function() {
-        if(window.currentTrafficDailyData.length === 0) return Swal.fire("Atención", "No hay datos.", "warning");
-        const ws = XLSX.utils.json_to_sheet(window.currentTrafficDailyData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Detalle Diario"); XLSX.writeFile(wb, "Trafico_Diario.xlsx");
-    }
-
-    // --- V64/V66/V67/V68: DASHBOARD DE CALIDAD ---
     window.renderQualityDashboard = function() {
         if(!RAW_DATA_CACHE.aux || !RAW_DATA_CACHE.aux.length) return;
-        const dS = document.getElementById('qDateStart')?.value || '';
-        const dE = document.getElementById('qDateEnd')?.value || '';
-        const agentInput = (document.getElementById('qAgentSearch')?.value || '').toLowerCase();
-        const stat = document.getElementById('qStatusFilter')?.value || '';
-        const callSense = (document.getElementById('qSentido')?.value || '').toLowerCase();
-        const callState = (document.getElementById('qEstado')?.value || 'atendida').toLowerCase();
-        const minDurVal = document.getElementById('qMinDur')?.value;
-        const maxDurVal = document.getElementById('qMaxDur')?.value;
-        const minDur = minDurVal ? parseFloat(minDurVal) * 60 : 0;
-        const maxDur = maxDurVal ? parseFloat(maxDurVal) * 60 : Infinity;
-
+        const dS = document.getElementById('qDateStart')?.value || '', dE = document.getElementById('qDateEnd')?.value || '', agentInput = (document.getElementById('qAgentSearch')?.value || '').toLowerCase(), stat = document.getElementById('qStatusFilter')?.value || '', callSense = (document.getElementById('qSentido')?.value || '').toLowerCase(), callState = (document.getElementById('qEstado')?.value || 'atendida').toLowerCase();
+        const minDur = (document.getElementById('qMinDur')?.value ? parseFloat(document.getElementById('qMinDur').value) : 0) * 60;
+        const maxDur = (document.getElementById('qMaxDur')?.value ? parseFloat(document.getElementById('qMaxDur').value) : Infinity) * 60;
         const excludedTips = ["no contesta", "buzon de voz", "n° no existe", "no existe", "volver a llamar", "corta llamado", "n° equivocado", "corta llamada", "numero equivocado", "sin n° valido", "telefono apagado"];
 
         let baseFilteredNoDuration = RAW_DATA_CACHE.aux.filter(r => {
-            const st = String(r.estado).toLowerCase().trim();
-            const tL = timeToSec(r.tiempo_de_llamada);
-            const isNoAt = st.includes('no-atendida') || st.includes('no atendida') || st.includes('abandonada') || st.includes('falla');
-            const isAt = !isNoAt && (st.includes('atendida') || st.includes('conectad') || st === 'ok' || st === '' || tL > 0);
-            
-            if (callState === 'atendida' && !isAt) return false;
-            if (callState === 'no-atendida' && !isNoAt) return false;
-            if (callSense && !String(r.sentido||'').toLowerCase().includes(callSense)) return false;
-
-            const isBot = r._a_low.includes('agente ivr') || r._a_low.includes('agente ia') || r._a_low.startsWith('bot');
-            if (isBot) return false;
-
-            if (dS && r._d < dS) return false;
-            if (dE && r._d > dE) return false;
-
-            const tipNorm = norm(r.tipificacion);
-            if (excludedTips.some(t => tipNorm.includes(t))) return false;
-            return true;
+            const st = String(r.estado).toLowerCase().trim(); const tL = timeToSec(r.tiempo_de_llamada); const isNoAt = st.includes('no-atendida') || st.includes('no atendida') || st.includes('abandonada') || st.includes('falla'); const isAt = !isNoAt && (st.includes('atendida') || st.includes('conectad') || st === 'ok' || st === '' || tL > 0);
+            if (callState === 'atendida' && !isAt) return false; if (callState === 'no-atendida' && !isNoAt) return false; if (callSense && !String(r.sentido||'').toLowerCase().includes(callSense)) return false;
+            const isBot = r._a_low.includes('agente ivr') || r._a_low.includes('agente ia') || r._a_low.startsWith('bot'); if (isBot) return false;
+            if (dS && r._d < dS) return false; if (dE && r._d > dE) return false;
+            if (excludedTips.some(t => norm(r.tipificacion).includes(t))) return false; return true;
         });
 
-        let durationStats = {};
-        baseFilteredNoDuration.forEach(r => {
-            if(!durationStats[r._a]) { durationStats[r._a] = { name: r._a, total: 0, inRange: 0 }; }
-            durationStats[r._a].total++;
-            const tL = timeToSec(r.tiempo_de_llamada);
-            if (tL >= minDur && tL <= maxDur) { durationStats[r._a].inRange++; }
-        });
-
-        let baseQ = baseFilteredNoDuration.filter(r => {
-            const tL = timeToSec(r.tiempo_de_llamada);
-            return tL >= minDur && tL <= maxDur;
-        });
-
-        let counts = { verde: 0, roja: 0, vacia: 0 };
-        let agentStats = {};
+        let durationStats = {}; baseFilteredNoDuration.forEach(r => { if(!durationStats[r._a]) { durationStats[r._a] = { name: r._a, total: 0, inRange: 0 }; } durationStats[r._a].total++; const tL = timeToSec(r.tiempo_de_llamada); if (tL >= minDur && tL <= maxDur) { durationStats[r._a].inRange++; } });
+        let baseQ = baseFilteredNoDuration.filter(r => { const tL = timeToSec(r.tiempo_de_llamada); return tL >= minDur && tL <= maxDur; });
+        let counts = { verde: 0, roja: 0, vacia: 0 }; let agentStats = {};
 
         baseQ.forEach(r => {
-            r._qStatus = window.evaluateQuality(r.observacion, r.telefono, r.tipificacion, r.nombre, r.tutor);
-            counts[r._qStatus]++;
-            if(!agentStats[r._a]) { agentStats[r._a] = { name: r._a, total: 0, verde: 0, roja: 0, vacia: 0 }; }
-            agentStats[r._a].total++;
-            agentStats[r._a][r._qStatus]++;
+            r._qStatus = window.evaluateQuality(r.observacion, r.telefono, r.tipificacion, r.nombre, r.tutor); counts[r._qStatus]++;
+            if(!agentStats[r._a]) { agentStats[r._a] = { name: r._a, total: 0, verde: 0, roja: 0, vacia: 0 }; } agentStats[r._a].total++; agentStats[r._a][r._qStatus]++;
         });
 
-        let total = counts.verde + counts.roja + counts.vacia;
-        let pctVerde = total > 0 ? (counts.verde / total * 100).toFixed(1) : 0;
-        let criticos = counts.roja + counts.vacia;
-
-        const elTotal = document.getElementById('qKpiTotal'); if(elTotal) elTotal.innerText = total;
-        const elVerde = document.getElementById('qKpiVerde'); if(elVerde) elVerde.innerText = pctVerde + '%';
-        const elCrit = document.getElementById('qKpiCriticos'); if(elCrit) elCrit.innerText = criticos;
+        let total = counts.verde + counts.roja + counts.vacia; let pctVerde = total > 0 ? (counts.verde / total * 100).toFixed(1) : 0; let criticos = counts.roja + counts.vacia;
+        const elTotal = document.getElementById('qKpiTotal'); if(elTotal) elTotal.innerText = total; const elVerde = document.getElementById('qKpiVerde'); if(elVerde) elVerde.innerText = pctVerde + '%'; const elCrit = document.getElementById('qKpiCriticos'); if(elCrit) elCrit.innerText = criticos;
 
         const canvas = document.getElementById('qualityPieChart');
-        if (canvas) {
-            if(charts['qualityPie']) charts['qualityPie'].destroy();
-            charts['qualityPie'] = new Chart(canvas, { type: 'doughnut', data: { labels: ['Óptimas (Verde)', 'Poco Útiles (Rojo)', 'Vacías (Gris)'], datasets: [{ data: [counts.verde, counts.roja, counts.vacia], backgroundColor: ['#10b981', '#ef4444', '#94a3b8'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } } });
-        }
+        if (canvas) { if(charts['qualityPie']) charts['qualityPie'].destroy(); charts['qualityPie'] = new Chart(canvas, { type: 'doughnut', data: { labels: ['Óptimas (Verde)', 'Poco Útiles (Rojo)', 'Vacías (Gris)'], datasets: [{ data: [counts.verde, counts.roja, counts.vacia], backgroundColor: ['#10b981', '#ef4444', '#94a3b8'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } } }); }
 
         let agentList = Object.values(agentStats);
-        agentList.sort((a, b) => {
-            let vA = a[qSummarySortCol], vB = b[qSummarySortCol];
-            if(qSummarySortCol === 'name') { vA = vA.toLowerCase(); vB = vB.toLowerCase(); }
-            if(vA < vB) return -1 * qSummarySortAsc;
-            if(vA > vB) return 1 * qSummarySortAsc;
-            return 0;
-        });
-
+        agentList.sort((a, b) => { let vA = a[qSummarySortCol], vB = b[qSummarySortCol]; if(qSummarySortCol === 'name') { vA = vA.toLowerCase(); vB = vB.toLowerCase(); } if(vA < vB) return -1 * qSummarySortAsc; if(vA > vB) return 1 * qSummarySortAsc; return 0; });
         window.currentQualitySummaryData = agentList.map(ag => ({ "Ejecutivo": ag.name, "Total En Rango": ag.total, "Óptimas": ag.verde, "Poco Útiles": ag.roja, "Vacías": ag.vacia }));
 
         const tbSummary = document.getElementById('qAgentTableBody');
-        if(tbSummary) {
-            tbSummary.innerHTML = agentList.map(ag => {
-                let isSelected = (agentInput === ag.name.toLowerCase());
-                let rowClass = isSelected ? 'bg-emerald-50 ring-1 ring-emerald-500 shadow-sm z-10 relative' : 'hover:bg-slate-50 cursor-pointer';
-                return `<tr class="border-b border-slate-100 transition-colors ${rowClass}" onclick="window.toggleQualityAgent('${ag.name}')">
-                    <td class="px-3 py-2 font-bold text-slate-700 truncate max-w-[150px]" title="${ag.name}">${ag.name}</td>
-                    <td class="px-3 py-2 text-center font-bold">${ag.total}</td>
-                    <td class="px-3 py-2 text-center font-bold text-emerald-600 bg-emerald-50/30">${ag.verde}</td>
-                    <td class="px-3 py-2 text-center font-bold text-red-600 bg-red-50/30">${ag.roja}</td>
-                    <td class="px-3 py-2 text-center font-bold text-slate-500 bg-slate-50">${ag.vacia}</td>
-                </tr>`;
-            }).join('');
-        }
+        if(tbSummary) { tbSummary.innerHTML = agentList.map(ag => { let isSelected = (agentInput === ag.name.toLowerCase()); let rowClass = isSelected ? 'bg-emerald-50 ring-1 ring-emerald-500 shadow-sm z-10 relative' : 'hover:bg-slate-50 cursor-pointer'; return `<tr class="border-b border-slate-100 transition-colors ${rowClass}" onclick="window.toggleQualityAgent('${ag.name}')"><td class="px-3 py-2 font-bold text-slate-700 truncate max-w-[150px]" title="${ag.name}">${ag.name}</td><td class="px-3 py-2 text-center font-bold">${ag.total}</td><td class="px-3 py-2 text-center font-bold text-emerald-600 bg-emerald-50/30">${ag.verde}</td><td class="px-3 py-2 text-center font-bold text-red-600 bg-red-50/30">${ag.roja}</td><td class="px-3 py-2 text-center font-bold text-slate-500 bg-slate-50">${ag.vacia}</td></tr>`; }).join(''); }
 
         let durList = Object.values(durationStats);
-        durList.sort((a, b) => {
-            let vA, vB;
-            if(qDurSortCol === 'name') { vA = a.name.toLowerCase(); vB = b.name.toLowerCase(); }
-            else if(qDurSortCol === 'total') { vA = a.total; vB = b.total; }
-            else if(qDurSortCol === 'rango') { vA = a.inRange; vB = b.inRange; }
-            else if(qDurSortCol === 'porcentaje') { vA = a.total > 0 ? a.inRange / a.total : 0; vB = b.total > 0 ? b.inRange / b.total : 0; }
-            if(vA < vB) return -1 * qDurSortAsc;
-            if(vA > vB) return 1 * qDurSortAsc;
-            return 0;
-        });
-        
-        window.currentDurationSummaryData = durList.map(ag => {
-            let pct = ag.total > 0 ? (ag.inRange / ag.total * 100).toFixed(1) : 0;
-            return { "Ejecutivo": ag.name, "Llamadas Totales": ag.total, "Cumplen Filtro (En Rango)": ag.inRange, "% Cumplimiento": pct + "%" };
-        });
+        durList.sort((a, b) => { let vA, vB; if(qDurSortCol === 'name') { vA = a.name.toLowerCase(); vB = b.name.toLowerCase(); } else if(qDurSortCol === 'total') { vA = a.total; vB = b.total; } else if(qDurSortCol === 'rango') { vA = a.inRange; vB = b.inRange; } else if(qDurSortCol === 'porcentaje') { vA = a.total > 0 ? a.inRange / a.total : 0; vB = b.total > 0 ? b.inRange / b.total : 0; } if(vA < vB) return -1 * qDurSortAsc; if(vA > vB) return 1 * qDurSortAsc; return 0; });
+        window.currentDurationSummaryData = durList.map(ag => { let pct = ag.total > 0 ? (ag.inRange / ag.total * 100).toFixed(1) : 0; return { "Ejecutivo": ag.name, "Llamadas Totales": ag.total, "Cumplen Filtro (En Rango)": ag.inRange, "% Cumplimiento": pct + "%" }; });
 
         const tbDur = document.getElementById('qDurationTableBody');
-        if (tbDur) {
-            tbDur.innerHTML = durList.map(ag => {
-                let pct = ag.total > 0 ? (ag.inRange / ag.total * 100).toFixed(1) : 0;
-                let isSelected = (agentInput === ag.name.toLowerCase());
-                let rowClass = isSelected ? 'bg-blue-50 ring-1 ring-blue-500 shadow-sm z-10 relative' : 'hover:bg-slate-50 cursor-pointer';
-                return `<tr class="border-b border-slate-100 transition-colors ${rowClass}" onclick="window.toggleQualityAgent('${ag.name}')">
-                    <td class="px-3 py-2 font-bold text-slate-700 truncate max-w-[150px]" title="${ag.name}">${ag.name}</td>
-                    <td class="px-3 py-2 text-center font-bold">${ag.total}</td>
-                    <td class="px-3 py-2 text-center font-bold text-blue-600">${ag.inRange}</td>
-                    <td class="px-3 py-2 text-center font-bold text-slate-500">${pct}%</td>
-                </tr>`;
-            }).join('');
-        }
+        if (tbDur) { tbDur.innerHTML = durList.map(ag => { let pct = ag.total > 0 ? (ag.inRange / ag.total * 100).toFixed(1) : 0; let isSelected = (agentInput === ag.name.toLowerCase()); let rowClass = isSelected ? 'bg-blue-50 ring-1 ring-blue-500 shadow-sm z-10 relative' : 'hover:bg-slate-50 cursor-pointer'; return `<tr class="border-b border-slate-100 transition-colors ${rowClass}" onclick="window.toggleQualityAgent('${ag.name}')"><td class="px-3 py-2 font-bold text-slate-700 truncate max-w-[150px]" title="${ag.name}">${ag.name}</td><td class="px-3 py-2 text-center font-bold">${ag.total}</td><td class="px-3 py-2 text-center font-bold text-blue-600">${ag.inRange}</td><td class="px-3 py-2 text-center font-bold text-slate-500">${pct}%</td></tr>`; }).join(''); }
 
-        let tableQ = baseQ.filter(r => {
-            if(agentInput && !r._a_low.includes(agentInput)) return false;
-            if(stat && r._qStatus !== stat) return false;
-            return true;
-        });
-
-        tableQ.sort((a, b) => {
-            let vA, vB;
-            if(qSortCol === 'fecha') { vA = a._d + ' ' + a._t; vB = b._d + ' ' + b._t; }
-            else if(qSortCol === 'agente') { vA = a._a_low; vB = b._a_low; }
-            else if(qSortCol === 'tipificacion') { vA = (a.tipificacion||'').toLowerCase(); vB = (b.tipificacion||'').toLowerCase(); }
-            else if(qSortCol === 'calidad') { vA = a._qStatus; vB = b._qStatus; }
-            else if(qSortCol === 'duracion') { vA = timeToSec(a.tiempo_de_llamada); vB = timeToSec(b.tiempo_de_llamada); }
-            else { vA = (a.observacion||'').toLowerCase(); vB = (b.observacion||'').toLowerCase(); }
-            if(vA < vB) return -1 * qSortAsc;
-            if(vA > vB) return 1 * qSortAsc;
-            return 0;
-        });
-
+        let tableQ = baseQ.filter(r => { if(agentInput && !r._a_low.includes(agentInput)) return false; if(stat && r._qStatus !== stat) return false; return true; });
+        tableQ.sort((a, b) => { let vA, vB; if(qSortCol === 'fecha') { vA = a._d + ' ' + a._t; vB = b._d + ' ' + b._t; } else if(qSortCol === 'agente') { vA = a._a_low; vB = b._a_low; } else if(qSortCol === 'tipificacion') { vA = (a.tipificacion||'').toLowerCase(); vB = (b.tipificacion||'').toLowerCase(); } else if(qSortCol === 'calidad') { vA = a._qStatus; vB = b._qStatus; } else if(qSortCol === 'duracion') { vA = timeToSec(a.tiempo_de_llamada); vB = timeToSec(b.tiempo_de_llamada); } else { vA = (a.observacion||'').toLowerCase(); vB = (b.observacion||'').toLowerCase(); } if(vA < vB) return -1 * qSortAsc; if(vA > vB) return 1 * qSortAsc; return 0; });
         window.currentQualityData = tableQ; 
         
-        const rc = document.getElementById('qRowCount'); if(rc) rc.innerText = tableQ.length + ' reg';
-        const tbDetails = document.getElementById('qualityTableBody');
-        
+        const rc = document.getElementById('qRowCount'); if(rc) rc.innerText = tableQ.length + ' reg'; const tbDetails = document.getElementById('qualityTableBody');
         if(tbDetails) {
             tbDetails.innerHTML = tableQ.slice(0, 200).map(r => {
-                let badge = '';
-                if(r._qStatus === 'verde') badge = '<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-[10px] font-bold border border-emerald-200">ÓPTIMA</span>';
-                else if(r._qStatus === 'roja') badge = '<span class="bg-red-100 text-red-800 px-2 py-1 rounded text-[10px] font-bold border border-red-200">POCO ÚTIL</span>';
-                else badge = '<span class="bg-slate-200 text-slate-700 px-2 py-1 rounded text-[10px] font-bold border border-slate-300">VACÍA</span>';
-
-                let safeObs = String(r.observacion || '').replace(/"/g, '&quot;');
-                let durText = r.tiempo_de_llamada || '00:00:00';
-                
-                return `<tr class="border-b border-slate-100 hover:bg-emerald-50/50">
-                    <td class="px-3 py-2 font-mono whitespace-nowrap">${r._d} <span class="text-slate-400">${r._t}</span></td>
-                    <td class="px-3 py-2 font-bold text-slate-700">${r._a}</td>
-                    <td class="px-3 py-2 font-mono text-indigo-600">${durText}</td>
-                    <td class="px-3 py-2 text-[10px] uppercase text-slate-500">${r.tipificacion || '-'}</td>
-                    <td class="px-3 py-2 text-xs text-slate-600 max-w-sm xl:max-w-md truncate" title="${safeObs}">${r.observacion || '-'}</td>
-                    <td class="px-3 py-2 text-center">${badge}</td>
-                </tr>`;
+                let badge = ''; if(r._qStatus === 'verde') badge = '<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-[10px] font-bold border border-emerald-200">ÓPTIMA</span>'; else if(r._qStatus === 'roja') badge = '<span class="bg-red-100 text-red-800 px-2 py-1 rounded text-[10px] font-bold border border-red-200">POCO ÚTIL</span>'; else badge = '<span class="bg-slate-200 text-slate-700 px-2 py-1 rounded text-[10px] font-bold border border-slate-300">VACÍA</span>';
+                let safeObs = String(r.observacion || '').replace(/"/g, '&quot;'); let durText = r.tiempo_de_llamada || '00:00:00';
+                return `<tr class="border-b border-slate-100 hover:bg-emerald-50/50"><td class="px-3 py-2 font-mono whitespace-nowrap">${r._d} <span class="text-slate-400">${r._t}</span></td><td class="px-3 py-2 font-bold text-slate-700">${r._a}</td><td class="px-3 py-2 font-mono text-indigo-600">${durText}</td><td class="px-3 py-2 text-[10px] uppercase text-slate-500">${r.tipificacion || '-'}</td><td class="px-3 py-2 text-xs text-slate-600 max-w-sm xl:max-w-md truncate" title="${safeObs}">${r.observacion || '-'}</td><td class="px-3 py-2 text-center">${badge}</td></tr>`;
             }).join('');
             if(tableQ.length > 200) tbDetails.innerHTML += `<tr><td colspan="6" class="text-center py-2 text-xs text-slate-400 bg-slate-50">Mostrando 200 de ${tableQ.length} registros (Descarga Excel para ver todo)</td></tr>`;
         }
     }
 
-    // --- V69: DASHBOARD DE TRÁFICO ---
     window.renderTrafficDashboard = function() {
         if(!RAW_DATA_CACHE.aux || !RAW_DATA_CACHE.aux.length) return;
         const dS = document.getElementById('tDateStart')?.value || '';
@@ -1880,29 +1626,17 @@
 
             if (isEntrante) {
                 inRecibidas++;
-                
                 if(!dailyStats[r._d]) dailyStats[r._d] = { d: r._d, rec: 0, at: 0, aband: 0, at30: 0, sumW: 0, sumT: 0 };
                 dailyStats[r._d].rec++;
-
                 let h = r._t.substring(0, 2) + ':00';
                 if(!hourlyStats[h]) hourlyStats[h] = { h: h, rec: 0, aband: 0 };
                 hourlyStats[h].rec++;
 
                 if (isAt && !isBot) {
-                    inAtendidas++;
-                    sumWaitIn += tW;
-                    sumTalkIn += tL;
-                    dailyStats[r._d].at++;
-                    dailyStats[r._d].sumW += tW;
-                    dailyStats[r._d].sumT += tL;
-                    if (tW <= 30) {
-                        inAtend30s++;
-                        dailyStats[r._d].at30++;
-                    }
+                    inAtendidas++; sumWaitIn += tW; sumTalkIn += tL; dailyStats[r._d].at++; dailyStats[r._d].sumW += tW; dailyStats[r._d].sumT += tL;
+                    if (tW <= 30) { inAtend30s++; dailyStats[r._d].at30++; }
                 } else {
-                    inAband++;
-                    dailyStats[r._d].aband++;
-                    hourlyStats[h].aband++;
+                    inAband++; dailyStats[r._d].aband++; hourlyStats[h].aband++;
                 }
             } else if (isSaliente) {
                 outEmitidas++;
@@ -1910,7 +1644,6 @@
             }
         });
 
-        // INBOUND CALCS
         let inNds = inAtendidas > 0 ? (inAtend30s / inAtendidas) * 100 : 0;
         let inNda = inRecibidas > 0 ? (inAtendidas / inRecibidas) * 100 : 0;
         let inTme = inAtendidas > 0 ? sumWaitIn / inAtendidas : 0;
@@ -1923,54 +1656,23 @@
         document.getElementById('tKpiInAb').innerText = inAband;
         document.getElementById('tKpiInAt30').innerText = inAtend30s;
         
-        const elNds = document.getElementById('tKpiInNds'); 
-        elNds.innerText = inNds.toFixed(1) + '%';
-        elNds.className = `text-xl font-bold ${inNds >= 80 ? 'text-green-600' : 'text-red-600'}`;
-
-        const elNda = document.getElementById('tKpiInNda'); 
-        elNda.innerText = inNda.toFixed(1) + '%';
-        elNda.className = `text-xl font-bold ${inNda >= 90 ? 'text-green-600' : 'text-red-600'}`;
-
+        const elNds = document.getElementById('tKpiInNds'); elNds.innerText = inNds.toFixed(1) + '%'; elNds.className = `text-xl font-bold ${inNds >= 80 ? 'text-green-600' : 'text-red-600'}`;
+        const elNda = document.getElementById('tKpiInNda'); elNda.innerText = inNda.toFixed(1) + '%'; elNda.className = `text-xl font-bold ${inNda >= 90 ? 'text-green-600' : 'text-red-600'}`;
         document.getElementById('tKpiInTme').innerText = secToTime(inTme, true);
         document.getElementById('tKpiInTmo').innerText = secToTime(inTmo, true);
 
-        // OUTBOUND CALCS
         let outFallidas = outEmitidas - outEfectivas;
         let outCont = outEmitidas > 0 ? (outEfectivas / outEmitidas) * 100 : 0;
-        
         window.currentTrafficOutbound = [{ "Métrica": "Total Emitidas", "Valor": outEmitidas }, { "Métrica": "Contactos Efectivos", "Valor": outEfectivas }, { "Métrica": "Llamadas Fallidas", "Valor": outFallidas }, { "Métrica": "Contactabilidad", "Valor": outCont.toFixed(1) + '%' }];
+        document.getElementById('tKpiOutEmit').innerText = outEmitidas; document.getElementById('tKpiOutEfec').innerText = outEfectivas; document.getElementById('tKpiOutFail').innerText = outFallidas; document.getElementById('tKpiOutCont').innerText = outCont.toFixed(1) + '%';
 
-        document.getElementById('tKpiOutEmit').innerText = outEmitidas;
-        document.getElementById('tKpiOutEfec').innerText = outEfectivas;
-        document.getElementById('tKpiOutFail').innerText = outFallidas;
-        document.getElementById('tKpiOutCont').innerText = outCont.toFixed(1) + '%';
-
-        // CHART HOURLY
-        const hours = Object.keys(hourlyStats).sort();
-        const dRec = hours.map(h => hourlyStats[h].rec);
-        const dAband = hours.map(h => hourlyStats[h].aband);
-        
+        const hours = Object.keys(hourlyStats).sort(); const dRec = hours.map(h => hourlyStats[h].rec); const dAband = hours.map(h => hourlyStats[h].aband);
         const canvas = document.getElementById('trafficHourlyChart');
-        if (canvas) {
-            if(charts['trafficHourly']) charts['trafficHourly'].destroy();
-            charts['trafficHourly'] = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: hours,
-                    datasets: [
-                        { label: 'Recibidas', data: dRec, backgroundColor: '#3b82f6', borderRadius: 4 },
-                        { label: 'Abandonadas', data: dAband, type: 'line', borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.3 }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
-            });
-        }
+        if (canvas) { if(charts['trafficHourly']) charts['trafficHourly'].destroy(); charts['trafficHourly'] = new Chart(canvas, { type: 'bar', data: { labels: hours, datasets: [ { label: 'Recibidas', data: dRec, backgroundColor: '#3b82f6', borderRadius: 4 }, { label: 'Abandonadas', data: dAband, type: 'line', borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.3 } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } } }); }
 
-        // DAILY TABLE
         let dailyArr = Object.values(dailyStats);
         dailyArr.sort((a, b) => {
             let vA = a[tSortCol] || a.d, vB = b[tSortCol] || b.d;
-            
             if(tSortCol === 'fecha') { vA = a.d; vB = b.d; }
             else if(tSortCol === 'recibidas') { vA = a.rec; vB = b.rec; }
             else if(tSortCol === 'atendidas') { vA = a.at; vB = b.at; }
@@ -1979,44 +1681,17 @@
             else if(tSortCol === 'nds') { vA = a.at > 0 ? a.at30 / a.at : 0; vB = b.at > 0 ? b.at30 / b.at : 0; }
             else if(tSortCol === 'nda') { vA = a.rec > 0 ? a.at / a.rec : 0; vB = b.rec > 0 ? b.at / b.rec : 0; }
             else if(tSortCol === 'tmo') { vA = a.at > 0 ? a.sumT / a.at : 0; vB = b.at > 0 ? b.sumT / b.at : 0; }
-
-            if(vA < vB) return -1 * tSortAsc;
-            if(vA > vB) return 1 * tSortAsc;
-            return 0;
+            if(vA < vB) return -1 * tSortAsc; if(vA > vB) return 1 * tSortAsc; return 0;
         });
 
-        window.currentTrafficDailyData = dailyArr.map(d => {
-            let nds = d.at > 0 ? (d.at30 / d.at) * 100 : 0;
-            let nda = d.rec > 0 ? (d.at / d.rec) * 100 : 0;
-            let tmo = d.at > 0 ? d.sumT / d.at : 0;
-            return {
-                "Fecha": d.d, "Día": getDayOfWeek(d.d), "Recibidas": d.rec, "Atendidas": d.at, "Abandonadas": d.aband, "Atendidas < 30s": d.at30, "NDS": nds.toFixed(1) + '%', "NDA": nda.toFixed(1) + '%', "TMO": secToTime(tmo, true)
-            };
-        });
+        window.currentTrafficDailyData = dailyArr.map(d => { let nds = d.at > 0 ? (d.at30 / d.at) * 100 : 0; let nda = d.rec > 0 ? (d.at / d.rec) * 100 : 0; let tmo = d.at > 0 ? d.sumT / d.at : 0; return { "Fecha": d.d, "Día": getDayOfWeek(d.d), "Recibidas": d.rec, "Atendidas": d.at, "Abandonadas": d.aband, "Atendidas < 30s": d.at30, "NDS": nds.toFixed(1) + '%', "NDA": nda.toFixed(1) + '%', "TMO": secToTime(tmo, true) }; });
 
-        const rc = document.getElementById('tRowCount'); if(rc) rc.innerText = dailyArr.length + ' reg';
-        const tb = document.getElementById('trafficTableBody');
-        
+        const rc = document.getElementById('tRowCount'); if(rc) rc.innerText = dailyArr.length + ' reg'; const tb = document.getElementById('trafficTableBody');
         if (tb) {
             tb.innerHTML = dailyArr.map(d => {
-                let nds = d.at > 0 ? (d.at30 / d.at) * 100 : 0;
-                let nda = d.rec > 0 ? (d.at / d.rec) * 100 : 0;
-                let tmo = d.at > 0 ? d.sumT / d.at : 0;
-
-                let cNds = nds >= 80 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50';
-                let cNda = nda >= 90 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50';
-
-                return `<tr class="border-b border-slate-100 hover:bg-orange-50/50">
-                    <td class="px-3 py-2 font-mono whitespace-nowrap">${d.d}</td>
-                    <td class="px-3 py-2 font-bold text-slate-500 uppercase text-[10px]">${getDayOfWeek(d.d)}</td>
-                    <td class="px-3 py-2 text-center font-bold text-slate-700">${d.rec}</td>
-                    <td class="px-3 py-2 text-center font-bold text-blue-600">${d.at}</td>
-                    <td class="px-3 py-2 text-center font-bold text-red-600">${d.aband}</td>
-                    <td class="px-3 py-2 text-center font-bold text-green-600">${d.at30}</td>
-                    <td class="px-3 py-2 text-center font-bold ${cNds}">${nds.toFixed(1)}%</td>
-                    <td class="px-3 py-2 text-center font-bold ${cNda}">${nda.toFixed(1)}%</td>
-                    <td class="px-3 py-2 text-center font-mono text-slate-600">${secToTime(tmo, true)}</td>
-                </tr>`;
+                let nds = d.at > 0 ? (d.at30 / d.at) * 100 : 0; let nda = d.rec > 0 ? (d.at / d.rec) * 100 : 0; let tmo = d.at > 0 ? d.sumT / d.at : 0;
+                let cNds = nds >= 80 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'; let cNda = nda >= 90 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50';
+                return `<tr class="border-b border-slate-100 hover:bg-orange-50/50"><td class="px-3 py-2 font-mono whitespace-nowrap">${d.d}</td><td class="px-3 py-2 font-bold text-slate-500 uppercase text-[10px]">${getDayOfWeek(d.d)}</td><td class="px-3 py-2 text-center font-bold text-slate-700">${d.rec}</td><td class="px-3 py-2 text-center font-bold text-blue-600">${d.at}</td><td class="px-3 py-2 text-center font-bold text-red-600">${d.aband}</td><td class="px-3 py-2 text-center font-bold text-green-600">${d.at30}</td><td class="px-3 py-2 text-center font-bold ${cNds}">${nds.toFixed(1)}%</td><td class="px-3 py-2 text-center font-bold ${cNda}">${nda.toFixed(1)}%</td><td class="px-3 py-2 text-center font-mono text-slate-600">${secToTime(tmo, true)}</td></tr>`;
             }).join('');
         }
     }
