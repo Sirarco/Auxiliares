@@ -1232,7 +1232,7 @@
         const t = String(texto).toUpperCase();
         if(t.includes('CALLBACK')) return '<span class="bg-fuchsia-100 text-fuchsia-800 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">CB</span>';
         if(t.includes('CONTROLES') || t.includes('FARMACIAS') || t.includes('OTRAS CONSULTAS') || t.includes('INTERCONSULTAS')) return '<span class="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">MC</span>';
-        if(t.includes('AGENDAMIENTO CONTROLES') || t.includes('AGENDAMIENTO EXPRESS') || t.includes('GES')) return '<span class="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">I</span>';
+        if(t.includes('AGENDAMIENTO CONTROLES') || t.includes('AGENDAMIENTO EXPRESS') || t.includes('AGENDAMIENTO CONTROLES GES') || t.includes('GES')) return '<span class="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">I</span>';
         if(t.includes('LEQ')) return '<span class="bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">LEQ</span>';
         return '<span class="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">O</span>';
     }
