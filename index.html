@@ -1018,7 +1018,9 @@
                     const isNoAt = isGlobalNoAt(r.estado, r.tipificacion);
                     let isAt = !isNoAt && (String(r.estado).toLowerCase().includes('atendida') || String(r.estado).toLowerCase().includes('conectad') || String(r.estado).toLowerCase() === 'ok' || String(r.estado).toLowerCase() === '' || tLla > 0);
                     
-                    if (isAt) { atend_c++; tmo_t += tLla; new_t_hab += tLla; if(tLla > 0 && tLla < SHORT_CALL_THRESHOLD) cort_c++;
+if(tLla > 0 && tLla < SHORT_CALL_THRESHOLD) cort_c++;
+                    if (isAt) { 
+                        atend_c++; tmo_t += tLla; new_t_hab += tLla; 
                     } else no_atend_c++;
                 });
                 d.c_calls = atend_c; d.c_no_atendidas = no_atend_c; d.contactabilidad = (atend_c + no_atend_c) > 0 ? (atend_c / (atend_c + no_atend_c)) * 100 : 0; d.c_short_calls = cort_c; d.t_hablado_tel = new_t_hab; d.t_hablado = new_t_hab + d.t_hablado_digital; d.t_acw = Math.max(0, d.t_hablado_tel_orig - new_t_hab); d.tmo = d.c_calls > 0 ? tmo_t / d.c_calls : 0;
@@ -1227,12 +1229,12 @@
     window.handleDragOver = function(e) { if(e.preventDefault) e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }
     window.handleDrop = function(e, id) { if(e.stopPropagation) e.stopPropagation(); if(auxDragSrcEl !== id) { let srcIdx = auxColOrder.indexOf(auxDragSrcEl), tgtIdx = auxColOrder.indexOf(id); let temp = auxColOrder[srcIdx]; auxColOrder.splice(srcIdx, 1); auxColOrder.splice(tgtIdx, 0, temp); window.renderAuxDashboard(); } return false; }
 
-    window.getBadgeHTML = function(texto) {
+window.getBadgeHTML = function(texto) {
         if(!texto) return '<span class="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">O</span>';
         const t = String(texto).toUpperCase();
         if(t.includes('CALLBACK')) return '<span class="bg-fuchsia-100 text-fuchsia-800 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">CB</span>';
+        if(t.includes('AGENDAMIENTO CONTROLES') || t.includes('AGENDAMIENTO EXPRESS') || t.includes('GES')) return '<span class="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">I</span>';
         if(t.includes('CONTROLES') || t.includes('FARMACIAS') || t.includes('OTRAS CONSULTAS') || t.includes('INTERCONSULTAS')) return '<span class="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">MC</span>';
-        if(t.includes('AGENDAMIENTO CONTROLES') || t.includes('AGENDAMIENTO EXPRESS') || t.includes('AGENDAMIENTO CONTROLES GES') || t.includes('GES')) return '<span class="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">I</span>';
         if(t.includes('LEQ')) return '<span class="bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">LEQ</span>';
         return '<span class="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">O</span>';
     }
@@ -1537,7 +1539,26 @@ let badge = window.getBadgeHTML(c.sigla_base);
     window.closeConfig = function() { document.getElementById('configPanel').classList.add('hidden'); if(GLOBAL_DATA.length===0 && !isOfflineMode) document.getElementById('offlineZone').classList.remove('hidden'); }
     window.showConfig = function() { document.getElementById('configPanel').classList.remove('hidden'); }
     window.saveConfig = function() { const u=document.getElementById('apiUrlInput').value.trim(); if(!u) return; localStorage.setItem('cc_dashboard_api_url',u); window.closeConfig(); window.connectToSheet(u); }
+// --- MOTORES DE ORDENAMIENTO ---
+    window.sortQuality = function(col) { if(qSortCol === col) qSortAsc *= -1; else { qSortCol = col; qSortAsc = 1; } window.renderQualityDashboard(); }
+    window.sortQualitySummary = function(col) { if(qSummarySortCol === col) qSummarySortAsc *= -1; else { qSummarySortCol = col; qSummarySortAsc = -1; } window.renderQualityDashboard(); }
+    window.sortDurationSummary = function(col) { if(qDurSortCol === col) qDurSortAsc *= -1; else { qDurSortCol = col; qDurSortAsc = -1; } window.renderQualityDashboard(); }
+    window.sortTraffic = function(col) { if(tSortCol === col) tSortAsc *= -1; else { tSortCol = col; tSortAsc = -1; } window.renderTrafficDashboard(); }
+    
+    // --- FILTRO DE EJECUTIVO AL HACER CLIC ---
+    window.toggleQualityAgent = function(name) {
+        const input = document.getElementById('qAgentSearch');
+        if(input.value.toLowerCase() === name.toLowerCase()) { input.value = ''; } else { input.value = name; }
+        window.renderQualityDashboard();
+    }
 
+    // --- MOTORES DE DESCARGA EXCEL ---
+    window.exportQualitySummary = function() { if(window.currentQualitySummaryData.length === 0) return Swal.fire("Atención", "No hay datos.", "warning"); const ws = XLSX.utils.json_to_sheet(window.currentQualitySummaryData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Calidad"); XLSX.writeFile(wb, "Resumen_Calidad_Ejecutivos.xlsx"); }
+    window.exportDurationSummary = function() { if(window.currentDurationSummaryData.length === 0) return Swal.fire("Atención", "No hay datos.", "warning"); const ws = XLSX.utils.json_to_sheet(window.currentDurationSummaryData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Tiempos"); XLSX.writeFile(wb, "Resumen_Tiempos_Ejecutivos.xlsx"); }
+    window.exportQualityDetails = function() { if(window.currentQualityData.length === 0) return Swal.fire("Atención", "No hay datos.", "warning"); const exportData = window.currentQualityData.map(r => ({ "Fecha": r._d, "Hora": r._t, "Ejecutivo": r._a, "Sentido": r.sentido || '-', "Estado": r.estado || '-', "Duración": r.tiempo_de_llamada || '00:00:00', "Tipificación": r.tipificacion || '-', "Observación": r.observacion || '-', "Calidad": r._qStatus.toUpperCase() })); const ws = XLSX.utils.json_to_sheet(exportData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Auditoria"); XLSX.writeFile(wb, "Auditoria_Glosas_Detalle.xlsx"); }
+    window.exportTrafficInbound = function() { if(window.currentTrafficInbound.length === 0) return Swal.fire("Atención", "No hay datos.", "warning"); const ws = XLSX.utils.json_to_sheet(window.currentTrafficInbound); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Entrantes"); XLSX.writeFile(wb, "Resumen_Trafico_Entrante.xlsx"); }
+    window.exportTrafficOutbound = function() { if(window.currentTrafficOutbound.length === 0) return Swal.fire("Atención", "No hay datos.", "warning"); const ws = XLSX.utils.json_to_sheet(window.currentTrafficOutbound); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Salientes"); XLSX.writeFile(wb, "Resumen_Trafico_Saliente.xlsx"); }
+    window.exportTrafficDaily = function() { if(window.currentTrafficDailyData.length === 0) return Swal.fire("Atención", "No hay datos.", "warning"); const ws = XLSX.utils.json_to_sheet(window.currentTrafficDailyData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Detalle Diario"); XLSX.writeFile(wb, "Trafico_Diario.xlsx"); }
     window.renderQualityDashboard = function() {
         if(!RAW_DATA_CACHE.aux || !RAW_DATA_CACHE.aux.length) return;
         const dS = document.getElementById('qDateStart')?.value || '', dE = document.getElementById('qDateEnd')?.value || '', agentInput = (document.getElementById('qAgentSearch')?.value || '').toLowerCase(), stat = document.getElementById('qStatusFilter')?.value || '', callSense = (document.getElementById('qSentido')?.value || '').toLowerCase(), callState = (document.getElementById('qEstado')?.value || 'atendida').toLowerCase();
@@ -1556,11 +1577,23 @@ let badge = window.getBadgeHTML(c.sigla_base);
 
         let durationStats = {}; baseFilteredNoDuration.forEach(r => { if(!durationStats[r._a]) { durationStats[r._a] = { name: r._a, total: 0, inRange: 0 }; } durationStats[r._a].total++; const tL = timeToSec(r.tiempo_de_llamada); if (tL >= minDur && tL <= maxDur) { durationStats[r._a].inRange++; } });
         let baseQ = baseFilteredNoDuration.filter(r => { const tL = timeToSec(r.tiempo_de_llamada); return tL >= minDur && tL <= maxDur; });
-        let counts = { verde: 0, roja: 0, vacia: 0 }; let agentStats = {};
+
+let counts = { verde: 0, roja: 0, vacia: 0 };
+        let agentStats = {};
 
         baseQ.forEach(r => {
-            r._qStatus = window.evaluateQuality(r.observacion, r.telefono, r.tipificacion, r.nombre, r.tutor); counts[r._qStatus]++;
-            if(!agentStats[r._a]) { agentStats[r._a] = { name: r._a, total: 0, verde: 0, roja: 0, vacia: 0 }; } agentStats[r._a].total++; agentStats[r._a][r._qStatus]++;
+            r._qStatus = window.evaluateQuality(r.observacion, r.telefono, r.tipificacion, r.nombre, r.tutor);
+            
+            if(!agentStats[r._a]) {
+                agentStats[r._a] = { name: r._a, total: 0, verde: 0, roja: 0, vacia: 0 };
+            }
+            agentStats[r._a].total++;
+            agentStats[r._a][r._qStatus]++;
+            
+            // Llenar KPIs superiores solo si coinciden con el ejecutivo clickeado (o si no hay filtro)
+            if(!agentInput || r._a_low.includes(agentInput)) {
+                counts[r._qStatus]++;
+            }
         });
 
         let total = counts.verde + counts.roja + counts.vacia; let pctVerde = total > 0 ? (counts.verde / total * 100).toFixed(1) : 0; let criticos = counts.roja + counts.vacia;
@@ -1627,12 +1660,13 @@ let badge = window.getBadgeHTML(c.sigla_base);
                 inRecibidas++;
                 if(!dailyStats[r._d]) dailyStats[r._d] = { d: r._d, rec: 0, at: 0, aband: 0, at30: 0, sumW: 0, sumT: 0 };
                 dailyStats[r._d].rec++;
-                let h = r._t.substring(0, 2) + ':00';
-                if(!hourlyStats[h]) hourlyStats[h] = { h: h, rec: 0, aband: 0 };
+               let hParts = r._t.split(':');
+                let h = (hParts[0].length === 1 ? '0' + hParts[0] : hParts[0]) + ':00';
+                if(!hourlyStats[h]) hourlyStats[h] = { h: h, rec: 0, aband: 0, at: 0 };
                 hourlyStats[h].rec++;
 
                 if (isAt && !isBot) {
-                    inAtendidas++; sumWaitIn += tW; sumTalkIn += tL; dailyStats[r._d].at++; dailyStats[r._d].sumW += tW; dailyStats[r._d].sumT += tL;
+                    inAtendidas++; sumWaitIn += tW; sumTalkIn += tL; dailyStats[r._d].at++; dailyStats[r._d].sumW += tW; dailyStats[r._d].sumT += tL; hourlyStats[h].at++;
                     if (tW <= 30) { inAtend30s++; dailyStats[r._d].at30++; }
                 } else {
                     inAband++; dailyStats[r._d].aband++; hourlyStats[h].aband++;
@@ -1657,9 +1691,9 @@ let badge = window.getBadgeHTML(c.sigla_base);
         window.currentTrafficOutbound = [{ "Métrica": "Total Emitidas", "Valor": outEmitidas }, { "Métrica": "Contactos Efectivos", "Valor": outEfectivas }, { "Métrica": "Llamadas Fallidas", "Valor": outFallidas }, { "Métrica": "Contactabilidad", "Valor": outCont.toFixed(1) + '%' }];
         document.getElementById('tKpiOutEmit').innerText = outEmitidas; document.getElementById('tKpiOutEfec').innerText = outEfectivas; document.getElementById('tKpiOutFail').innerText = outFallidas; document.getElementById('tKpiOutCont').innerText = outCont.toFixed(1) + '%';
 
-        const hours = Object.keys(hourlyStats).sort(); const dRec = hours.map(h => hourlyStats[h].rec); const dAband = hours.map(h => hourlyStats[h].aband);
+const hours = Object.keys(hourlyStats).sort(); const dRec = hours.map(h => hourlyStats[h].rec); const dAband = hours.map(h => hourlyStats[h].aband); const dAtend = hours.map(h => hourlyStats[h].at);
         const canvas = document.getElementById('trafficHourlyChart');
-        if (canvas) { if(charts['trafficHourly']) charts['trafficHourly'].destroy(); charts['trafficHourly'] = new Chart(canvas, { type: 'bar', data: { labels: hours, datasets: [ { label: 'Recibidas', data: dRec, backgroundColor: '#3b82f6', borderRadius: 4 }, { label: 'Abandonadas', data: dAband, type: 'line', borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.3 } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } } }); }
+        if (canvas) { if(charts['trafficHourly']) charts['trafficHourly'].destroy(); charts['trafficHourly'] = new Chart(canvas, { type: 'bar', data: { labels: hours, datasets: [ { label: 'Recibidas', data: dRec, backgroundColor: '#3b82f6', borderRadius: 4 }, { label: 'Atendidas', data: dAtend, backgroundColor: '#10b981', borderRadius: 4 }, { label: 'Abandonadas', data: dAband, type: 'line', borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.3 } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } } }); }
 
         let dailyArr = Object.values(dailyStats);
         dailyArr.sort((a, b) => {
