@@ -808,7 +808,7 @@
                     tiempo_de_espera: iTe >= 0 ? (row[iTe] ?? "") : "", tiempo_de_llamada: iTl >= 0 ? (row[iTl] ?? "") : "",
                     observacion: iOb >= 0 ? (row[iOb] ?? "") : "", telefono: iTel >= 0 ? (row[iTel] ?? "") : "",
                     nombre: iNom >= 0 ? (row[iNom] ?? "") : "", tutor: iTut >= 0 ? (row[iTut] ?? "") : "", 
-                    tipificacion: iTip >= 0 ? (row[iTip] ?? "") : "", rut: iRut >= 0 ? String(row[iRut]||'').trim() : ""
+                    tipificacion: iTip >= 0 ? (row[iTip] ?? "") : "", sigla_base: row[18] !== undefined ? String(row[18]) : "", rut: iRut >= 0 ? String(row[iRut]||'').trim() : ""
                 });
             }
             RAW_DATA_CACHE.aux = parsed; auxLoaded = true;
@@ -869,7 +869,7 @@
                         estado: iEs >= 0 ? (row[iEs] ?? "") : "", sentido: iSe >= 0 ? (row[iSe] ?? "") : "",
                         tiempo_de_espera: iTe >= 0 ? (row[iTe] ?? "") : "", tiempo_de_llamada: iTl >= 0 ? (row[iTl] ?? "") : "",
                         observacion: iOb >= 0 ? (row[iOb] ?? "") : "", telefono: iTel >= 0 ? (row[iTel] ?? "") : "",
-                        nombre: iNom >= 0 ? (row[iNom] ?? "") : "", tutor: iTut >= 0 ? (row[iTut] ?? "") : "", tipificacion: iTip >= 0 ? (row[iTip] ?? "") : "", rut: iRut >= 0 ? String(row[iRut]||'').trim() : ""
+                        nombre: iNom >= 0 ? (row[iNom] ?? "") : "", tutor: iTut >= 0 ? (row[iTut] ?? "") : "", tipificacion: iTip >= 0 ? (row[iTip] ?? "") : "", sigla_base: row[18] !== undefined ? String(row[18]) : "", rut: iRut >= 0 ? String(row[iRut]||'').trim() : ""
                     });
                 }
                 RAW_DATA_CACHE.aux = parsed; auxLoaded = true;
@@ -1227,6 +1227,16 @@
     window.handleDragOver = function(e) { if(e.preventDefault) e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }
     window.handleDrop = function(e, id) { if(e.stopPropagation) e.stopPropagation(); if(auxDragSrcEl !== id) { let srcIdx = auxColOrder.indexOf(auxDragSrcEl), tgtIdx = auxColOrder.indexOf(id); let temp = auxColOrder[srcIdx]; auxColOrder.splice(srcIdx, 1); auxColOrder.splice(tgtIdx, 0, temp); window.renderAuxDashboard(); } return false; }
 
+    window.getBadgeHTML = function(texto) {
+        if(!texto) return '<span class="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">O</span>';
+        const t = String(texto).toUpperCase();
+        if(t.includes('CALLBACK')) return '<span class="bg-fuchsia-100 text-fuchsia-800 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">CB</span>';
+        if(t.includes('CONTROLES') || t.includes('FARMACIAS') || t.includes('OTRAS CONSULTAS') || t.includes('INTERCONSULTAS')) return '<span class="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">MC</span>';
+        if(t.includes('AGENDAMIENTO CONTROLES') || t.includes('AGENDAMIENTO EXPRESS') || t.includes('GES')) return '<span class="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">I</span>';
+        if(t.includes('LEQ')) return '<span class="bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">LEQ</span>';
+        return '<span class="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold text-[9px] mr-1">O</span>';
+    }
+    
     window.renderAuxDashboard = function() {
         if(!RAW_DATA_CACHE.aux || !RAW_DATA_CACHE.aux.length) return;
         const dS = document.getElementById('auxDateStart')?.value || '';
@@ -1262,10 +1272,7 @@
             const colDefsFlat = {
                 'col-fecha': { l:'Fecha', a:'left', c:'font-mono', r:(g)=>g._d }, 'col-hora': { l:'Hora', a:'left', c:'font-mono bg-slate-100/50 font-bold', r:(g)=>g._t },
                 'col-agente': { l:'Agente', a:'left', c:'font-bold text-blue-600', r:(g)=>g._a },
-                'col-total': { l:'Teléfono', a:'center', c:'text-slate-600', r:(g)=>{ let tel = String(g.telefono||'').trim() || '-'; if(tel !== '-' && dayPhoneCounts[tel] > 1) return `<span class="text-red-600 font-bold bg-red-100 px-1 rounded">${tel}</span> <span class="text-[9px] text-slate-400 font-bold" title="Llamadas en el periodo">(🔁 ${dayPhoneCounts[tel]})</span>`; return tel; } },
-                'col-atend': { l:'Estado', a:'center', c:(g=>isGlobalNoAt(g.estado, g.tipificacion)?'font-bold text-orange-600':'font-bold text-green-600'), r:(g)=>g.estado||'OK' },
-                'col-noatend': { l:'Sentido', a:'center', c:'uppercase text-[10px] text-slate-500', r:(g)=>g.sentido||'-' },
-                'col-tmo': { l:'Espera', a:'right', c:'font-mono text-purple-600', r:(g)=>g.tiempo_de_espera||'00:00:00' },
+                'col-total': { l:'Teléfono', a:'left', c:'text-slate-600 whitespace-nowrap', r:(g)=>{ let badge = window.getBadgeHTML(g.sigla_base); let tel = String(g.telefono||'').trim() || '-'; if(tel !== '-' && dayPhoneCounts[tel] > 1) return `${badge} <span class="text-red-600 font-bold bg-red-100 px-1 rounded">${tel}</span> <span class="text-[9px] text-slate-400 font-bold" title="Llamadas en el periodo">(🔁 ${dayPhoneCounts[tel]})</span>`; return `${badge} ${tel}`; } },
                 'col-hablado': { l:'Duración', a:'right', c:'font-mono text-indigo-600 font-bold', r:(g)=>g.tiempo_de_llamada||'00:00:00' },
                 'col-contact': { l:'Tipificación', a:'left', c:'text-[10px] text-slate-500', r:(g)=>g.tipificacion||'-' }
             };
@@ -1396,11 +1403,13 @@
                         }
                     }
 
+let badge = window.getBadgeHTML(c.sigla_base);
                     let tel = String(c.telefono||'').trim() || '-'; let telUI = tel;
                     if(tel !== '-') {
                         if(blockPhoneCounts[tel] > 1) telUI = `<span class="text-red-700 font-bold bg-red-100 px-1 rounded shadow-sm border border-red-300">${tel}</span>`;
                         if(dayPhoneCounts[tel] > 1) telUI += ` <span class="text-[9px] text-slate-400 font-bold ml-1" title="Llamadas en el periodo filtrado">(🔁 ${dayPhoneCounts[tel]})</span>`;
                     }
+                    telUI = badge + " " + telUI;
                     let rut = String(c.rut||'').trim() || '-'; let rutUI = rut;
                     if(rut !== '-') {
                         if(blockRutCounts[rut] > 1) rutUI = `<span class="text-amber-700 font-bold bg-amber-100 px-1 rounded shadow-sm border border-amber-300">${rut}</span>`;
