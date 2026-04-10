@@ -311,10 +311,16 @@
                     <datalist id="auxAgentsList"></datalist>
                 </div>
                 
-                <div class="w-full sm:w-auto flex flex-col gap-1">
+<div class="w-full sm:w-auto flex flex-col gap-1">
                     <label class="text-[10px] font-bold text-purple-600 uppercase">Sentido</label>
                     <select id="auxSentido" onchange="window.renderAuxDashboard()" class="w-full bg-white border border-purple-200 rounded px-3 py-1.5 text-sm outline-none">
                         <option value="">Todos</option><option value="entrante">Entrante</option><option value="saliente">Saliente</option>
+                    </select>
+                </div>
+                <div class="w-full sm:w-auto flex flex-col gap-1">
+                    <label class="text-[10px] font-bold text-purple-600 uppercase">Rango Horario</label>
+                    <select id="auxRangoFiltro" onchange="window.renderAuxDashboard()" class="w-full bg-white border border-purple-200 rounded px-3 py-1.5 text-sm outline-none font-bold text-purple-700">
+                        <option value="">Todos los Rangos</option>
                     </select>
                 </div>
             </div>
@@ -353,9 +359,12 @@
                                 <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-atend')"> Atendidas</label>
                                 <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-noatend')"> No Atendidas</label>
                                 <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-tmo')"> TMO</label>
-                                <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-hablado')"> Suma Hablado</label>
+                            <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-tatend')"> T. Atendidas</label>
+                                <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-tnoatend')"> T. No Atendidas</label>
+                                <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-gap')"> Suma GAP</label>
+                                <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-hablado')"> Suma Hablado (Total)</label>
                                 <label><input type="checkbox" checked onchange="window.toggleAuxCol('col-contact')"> Contactabilidad</label>
-                            </div>
+                            </div> 
                         </div>
                         <button onclick="window.exportAuxTableOnly()" class="text-emerald-600 hover:text-emerald-700 text-[10px] font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-100">Descargar Excel</button>
                     </div>
@@ -660,8 +669,8 @@
     
     // --- GLOBALES AUXILIAR ---
     let selectedAuxAgents = [];
-    let auxVisCols = { 'col-fecha':true, 'col-hora':true, 'col-agente':true, 'col-total':true, 'col-atend':true, 'col-noatend':true, 'col-tmo':true, 'col-hablado':true, 'col-contact':true, 'col-pacw':false };
-    let auxColOrder = ['col-fecha', 'col-hora', 'col-agente', 'col-total', 'col-atend', 'col-noatend', 'col-tmo', 'col-hablado', 'col-contact'];
+let auxVisCols = { 'col-fecha':true, 'col-hora':true, 'col-agente':true, 'col-total':true, 'col-atend':true, 'col-noatend':true, 'col-tmo':true, 'col-tatend':true, 'col-tnoatend':true, 'col-gap':true, 'col-hablado':true, 'col-contact':true, 'col-pacw':false };
+    let auxColOrder = ['col-fecha', 'col-hora', 'col-agente', 'col-total', 'col-atend', 'col-noatend', 'col-tmo', 'col-tatend', 'col-tnoatend', 'col-gap', 'col-hablado', 'col-contact'];
     let auxDragSrcEl = null;
 
     let qSortCol = 'fecha', qSortAsc = -1, qSummarySortCol = 'total', qSummarySortAsc = -1, qDurSortCol = 'total', qDurSortAsc = -1, tSortCol = 'fecha', tSortAsc = 1;
@@ -1275,8 +1284,11 @@ window.getBadgeHTML = function(texto) {
                 'col-fecha': { l:'Fecha', a:'left', c:'font-mono', r:(g)=>g._d }, 'col-hora': { l:'Hora', a:'left', c:'font-mono bg-slate-100/50 font-bold', r:(g)=>g._t },
                 'col-agente': { l:'Agente', a:'left', c:'font-bold text-blue-600', r:(g)=>g._a },
                 'col-total': { l:'Teléfono', a:'left', c:'text-slate-600 whitespace-nowrap', r:(g)=>{ let badge = window.getBadgeHTML(g.sigla_base); let tel = String(g.telefono||'').trim() || '-'; if(tel !== '-' && dayPhoneCounts[tel] > 1) return `${badge} <span class="text-red-600 font-bold bg-red-100 px-1 rounded">${tel}</span> <span class="text-[9px] text-slate-400 font-bold" title="Llamadas en el periodo">(🔁 ${dayPhoneCounts[tel]})</span>`; return `${badge} ${tel}`; } },
+
+'col-tatend': { l:'-', a:'center', c:'text-slate-300', r:()=>'-' }, 'col-tnoatend': { l:'-', a:'center', c:'text-slate-300', r:()=>'-' }, 'col-gap': { l:'-', a:'center', c:'text-slate-300', r:()=>'-' },
                 'col-hablado': { l:'Duración', a:'right', c:'font-mono text-indigo-600 font-bold', r:(g)=>g.tiempo_de_llamada||'00:00:00' },
                 'col-contact': { l:'Tipificación', a:'left', c:'text-[10px] text-slate-500', r:(g)=>g.tipificacion||'-' }
+
             };
             let theadHtml = '<tr>'; auxColOrder.forEach(id => { if(auxVisCols[id] && colDefsFlat[id]) theadHtml += `<th class="px-3 py-2 text-${colDefsFlat[id].a}" draggable="true" ondragstart="window.handleDragStart(event, '${id}')" ondragover="window.handleDragOver(event)" ondrop="window.handleDrop(event, '${id}')">${colDefsFlat[id].l}</th>`; }); th.innerHTML = theadHtml + '</tr>';
             tb.innerHTML = filteredCalls.slice(0,200).map(r => { 
@@ -1308,36 +1320,37 @@ window.getBadgeHTML = function(texto) {
 
         for(const k in limits) {
             let parts = k.split('|'); let ag = parts[0], dt = parts[1]; let minBlock = Math.floor(limits[k].min / iv) * iv; let maxBlock = Math.floor(limits[k].max / iv) * iv;
-            for(let b = minBlock; b <= maxBlock; b += iv) { let bE = b + iv; let iStr = `${pad(Math.floor(b/60))}:${pad(b%60)} - ${pad(Math.floor(bE/60))}:${pad(bE%60)}`; blocksData[`${ag}|${dt}|${iStr}`] = { date: dt, agent: ag, blockStr: iStr, bS: b, calls: [], states: [], rawStates: [], at:0, no:0, h:0 }; }
+            for(let b = minBlock; b <= maxBlock; b += iv) { let bE = b + iv; let iStr = `${pad(Math.floor(b/60))}:${pad(b%60)} - ${pad(Math.floor(bE/60))}:${pad(bE%60)}`; blocksData[`${ag}|${dt}|${iStr}`] = { date: dt, agent: ag, blockStr: iStr, bS: b, calls: [], states: [], rawStates: [], at:0, no:0, h:0, tAtend:0, tNoAtend:0, gap:0 }; }
         }
 
         filteredCalls.forEach(r => {
             let tP = r._t.split(':'); if(tP.length<2) return; let m = parseInt(tP[0])*60 + parseInt(tP[1]); let bS = Math.floor(m/iv)*iv; let bE = bS + iv; let iStr = `${pad(Math.floor(bS/60))}:${pad(bS%60)} - ${pad(Math.floor(bE/60))}:${pad(bE%60)}`; let k = `${r._a}|${r._d}|${iStr}`;
             if(blocksData[k]) {
                 blocksData[k].calls.push(r); const tL = timeToSec(r.tiempo_de_llamada); const isNoAt = isGlobalNoAt(r.estado, r.tipificacion); const isAt = !isNoAt && (String(r.estado).toLowerCase().includes('atendida') || String(r.estado).toLowerCase().includes('conectad') || String(r.estado).toLowerCase() === 'ok' || String(r.estado).toLowerCase() === '' || tL > 0);
-                if(isNoAt) { blocksData[k].no++; } else if(isAt) { blocksData[k].at++; blocksData[k].h+=tL; } else { if(tL>0){blocksData[k].at++;blocksData[k].h+=tL;}else blocksData[k].no++; }
+                if(isNoAt) { blocksData[k].no++; blocksData[k].tNoAtend += tL; blocksData[k].h += tL; } else if(isAt) { blocksData[k].at++; blocksData[k].tAtend += tL; blocksData[k].h += tL; } else { if(tL>0){blocksData[k].at++; blocksData[k].tAtend += tL; blocksData[k].h += tL;} else {blocksData[k].no++; blocksData[k].tNoAtend += tL; blocksData[k].h += tL;} }
             }
         });
+
 
         const iconMap = { 'administrativo': '⚙️', 'baño': '🚽', 'bano': '🚽', 'break': '☕', 'colación': '🍽️', 'colacion': '🍽️', 'capacitación': '🎓', 'capacitacion': '🎓' };
         filteredStates.forEach(det => {
             let stRaw = String(getVal(det, ['estado'])||"").trim(); let stLow = stRaw.toLowerCase(); let icon = iconMap[stLow];
-            if(icon) {
-                let startVal = String(getVal(det, ['inicio'])||""); let durVal = getVal(det, ['tiempo', 'duracion']); let endVal = String(getVal(det, ['fin'])||""); 
-                let sTimeFull = startVal.includes(' ') ? startVal.split(' ').pop() : startVal;
-                let sTimeStr = extractTime(sTimeFull); 
+            
+if(icon) {
+                let rawStart = getVal(det, ['inicio']); let rawDur = getVal(det, ['tiempo', 'duracion']);
+                let inicioSec = timeToSec(rawStart); let durSec = timeToSec(rawDur); let finSec = inicioSec + durSec;
+                let sTimeStr = secToTime(inicioSec, false);
                 let tP = sTimeStr.split(':'); if(tP.length<2) return;
                 let m = parseInt(tP[0])*60 + parseInt(tP[1]); let bS = Math.floor(m/iv)*iv; let bE = bS + iv; let iStr = `${pad(Math.floor(bS/60))}:${pad(bS%60)} - ${pad(Math.floor(bE/60))}:${pad(bE%60)}`; let k = `${det._normA}|${det._normD}|${iStr}`;
                 
                 if(blocksData[k]) {
-                    let eTimeFull = endVal.includes(' ') ? endVal.split(' ').pop() : endVal; let inicioSec = timeToSec(sTimeStr); let durSec = timeToSec(durVal);
-                    let endFinalStr = (!endVal || endVal === "undefined") ? secToTime(inicioSec + durSec, false) : secToTime(timeToSec(extractTime(eTimeFull)), false);
-                    let titleText = `${stRaw.charAt(0).toUpperCase() + stRaw.slice(1)} ${secToTime(inicioSec, true)} - ${endFinalStr.substr(0,5)} - TOTAL: ${secToTime(durSec, false)}`;
+                    let titleText = `${stRaw.charAt(0).toUpperCase() + stRaw.slice(1)} ${secToTime(inicioSec, true)} - ${secToTime(finSec, true)} - TOTAL: ${secToTime(durSec, false)}`;
                     let htmlIcon = `<span title="${titleText}" class="cursor-help text-[16px] hover:scale-125 transition-transform inline-block">${icon}</span>`; 
                     blocksData[k].states.push(htmlIcon);
-                    blocksData[k].rawStates.push({ startSec: inicioSec, endSec: inicioSec + durSec, iconHtml: htmlIcon, name: stRaw });
+                    blocksData[k].rawStates.push({ startSec: inicioSec, endSec: finSec, iconHtml: htmlIcon, name: stRaw });
                 }
             }
+
         });
 
         let finalBlocks = Object.values(blocksData); finalBlocks.sort((a,b) => a.date.localeCompare(b.date) || a.blockStr.localeCompare(b.blockStr) || a.agent.localeCompare(b.agent));
@@ -1359,16 +1372,39 @@ window.getBadgeHTML = function(texto) {
             'col-total': { l:'Interacciones', a:'center', c:'text-slate-600 font-bold', r:(g)=>g.at+g.no },
             'col-atend': { l:'Atendidas', a:'center', c:'font-bold text-green-600 bg-green-50/30', r:(g)=>g.at },
             'col-noatend': { l:'No Atend.', a:'center', c:'font-bold text-orange-600 bg-orange-50/30', r:(g)=>g.no },
-            'col-tmo': { l:'TMO Promedio', a:'right', c:'font-mono text-purple-600', r:(g)=>secToTime(g.at?g.h/g.at:0,true) },
-            'col-hablado': { l:'Suma Hablado', a:'right', c:'font-mono text-indigo-600 font-bold', r:(g)=>secToTime(g.h) },
+
+'col-tmo': { l:'TMO Promedio', a:'right', c:'font-mono text-purple-600', r:(g)=>secToTime(g.at?g.tAtend/g.at:0,true) },
+            'col-tatend': { l:'T. Atendidas', a:'right', c:'font-mono text-emerald-600 font-bold bg-emerald-50/30', r:(g)=>secToTime(g.tAtend) },
+            'col-tnoatend': { l:'T. No Atendidas', a:'right', c:'font-mono text-orange-600 font-bold bg-orange-50/30', r:(g)=>secToTime(g.tNoAtend) },
+            'col-gap': { l:'Suma GAP', a:'right', c:'font-mono text-red-600 font-bold bg-red-50/30', r:(g)=>secToTime(g.gap) },
+            'col-hablado': { l:'Suma Hablado (Total)', a:'right', c:'font-mono text-indigo-600 font-bold', r:(g)=>secToTime(g.h) },
             'col-contact': { l:'Contactabilidad', a:'right', c:'font-bold text-sky-600 bg-sky-50/30', r:(g)=>((Number((g.at+g.no)?(g.at/(g.at+g.no))*100:0)).toFixed(1)+'%') }
+
         };
 
         let theadHtml = '<tr>'; auxColOrder.forEach(id => { if(colDefsGrp[id] && auxVisCols[id]) theadHtml += `<th class="px-3 py-2 text-${colDefsGrp[id].a}">${colDefsGrp[id].l}</th>`; }); th.innerHTML = theadHtml + '</tr>';
 
+const rangoFilter = document.getElementById('auxRangoFiltro'); const currentRango = rangoFilter.value;
+        if(rangoFilter) {
+            let uniqueRangos = [...new Set(finalBlocks.map(b => b.blockStr))].sort();
+            rangoFilter.innerHTML = '<option value="">Todos los Rangos</option>' + uniqueRangos.map(r => `<option value="${r}" ${currentRango === r ? 'selected' : ''}>${r}</option>`).join('');
+        }
+        if(currentRango) { finalBlocks = finalBlocks.filter(b => b.blockStr === currentRango); }
+
+        finalBlocks.forEach(b => {
+            b.gap = 0;
+            if(b.calls.length > 1) {
+                b.calls.sort((c1, c2) => timeToSec(c1._t) - timeToSec(c2._t));
+                for(let i=1; i<b.calls.length; i++) {
+                    let prevEnd = timeToSec(b.calls[i-1]._t) + timeToSec(b.calls[i-1].tiempo_de_llamada);
+                    let currStart = timeToSec(b.calls[i]._t); let gap = currStart - prevEnd; if(gap > 0) b.gap += gap;
+                }
+            }
+        });
+
         let lastBlockStr = '';
         tb.innerHTML = finalBlocks.map((b, bIdx) => {
-            let isNewBlock = (`${b.date}-${b.blockStr}` !== lastBlockStr); 
+            let isNewBlock = (`${b.date}-${b.blockStr}` !== lastBlockStr);
             lastBlockStr = `${b.date}-${b.blockStr}`;
             let nextBlockStr = finalBlocks[bIdx+1] ? `${finalBlocks[bIdx+1].date}-${finalBlocks[bIdx+1].blockStr}` : '';
             let isLastInBlock = (`${b.date}-${b.blockStr}` !== nextBlockStr);
